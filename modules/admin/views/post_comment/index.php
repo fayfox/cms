@@ -1,6 +1,6 @@
 <?php
-use fay\helpers\Html;
-use fay\models\tables\PostComments;
+use fay\helpers\HtmlHelper;
+use fay\models\tables\PostCommentsTable;
 use cms\helpers\PostCommentHelper;
 
 $settings = F::form('setting')->getAllData();
@@ -25,7 +25,7 @@ $cols = F::form('setting')->getData('cols', array());
 				F::form('search')->inputText('keywords', array(
 					'class'=>'form-control w200',
 				)),
-				Html::tag('span', array(
+				HtmlHelper::tag('span', array(
 					'class'=>'pl11',
 				), '评论时间'),
 				'&nbsp;',
@@ -57,27 +57,27 @@ $cols = F::form('setting')->getData('cols', array());
 				</span>)</span>
 				|
 			</li>
-			<li class="publish <?php if(F::app()->input->get('status', 'intval') === PostComments::STATUS_PENDING && F::app()->input->get('deleted') != 1)echo 'sel';?>">
-				<?php echo Html::link(PostCommentHelper::getStatus(PostComments::STATUS_PENDING, 0, false), array('admin/post-comment/index', array(
-					'status'=>PostComments::STATUS_PENDING,
+			<li class="publish <?php if(F::app()->input->get('status', 'intval') === PostCommentsTable::STATUS_PENDING && F::app()->input->get('deleted') != 1)echo 'sel';?>">
+				<?php echo HtmlHelper::link(PostCommentHelper::getStatus(PostCommentsTable::STATUS_PENDING, 0, false), array('admin/post-comment/index', array(
+					'status'=>PostCommentsTable::STATUS_PENDING,
 				)));?>
 				<span class="fc-grey">(<span id="pending-post-comment-count">
 					<img src="<?php echo $this->assets('images/throbber.gif')?>" />
 				</span>)</span>
 				|
 			</li>
-			<li class="draft <?php if(F::app()->input->get('status', 'intval') === PostComments::STATUS_APPROVED && F::app()->input->get('deleted') != 1)echo 'sel';?>">
-				<?php echo Html::link(PostCommentHelper::getStatus(PostComments::STATUS_APPROVED, 0, false), array('admin/post-comment/index', array(
-					'status'=>PostComments::STATUS_APPROVED,
+			<li class="draft <?php if(F::app()->input->get('status', 'intval') === PostCommentsTable::STATUS_APPROVED && F::app()->input->get('deleted') != 1)echo 'sel';?>">
+				<?php echo HtmlHelper::link(PostCommentHelper::getStatus(PostCommentsTable::STATUS_APPROVED, 0, false), array('admin/post-comment/index', array(
+					'status'=>PostCommentsTable::STATUS_APPROVED,
 				)));?>
 				<span class="fc-grey">(<span id="approved-post-comment-count">
 					<img src="<?php echo $this->assets('images/throbber.gif')?>" />
 				</span>)</span>
 				|
 			</li>
-			<li class="draft <?php if(F::app()->input->get('status', 'intval') === PostComments::STATUS_UNAPPROVED && F::app()->input->get('deleted') != 1)echo 'sel';?>">
-				<?php echo Html::link(PostCommentHelper::getStatus(PostComments::STATUS_UNAPPROVED, 0, false), array('admin/post-comment/index', array(
-					'status'=>PostComments::STATUS_UNAPPROVED,
+			<li class="draft <?php if(F::app()->input->get('status', 'intval') === PostCommentsTable::STATUS_UNAPPROVED && F::app()->input->get('deleted') != 1)echo 'sel';?>">
+				<?php echo HtmlHelper::link(PostCommentHelper::getStatus(PostCommentsTable::STATUS_UNAPPROVED, 0, false), array('admin/post-comment/index', array(
+					'status'=>PostCommentsTable::STATUS_UNAPPROVED,
 				)));?>
 				<span class="fc-grey">(<span id="unapproved-post-comment-count">
 					<img src="<?php echo $this->assets('images/throbber.gif')?>" />
@@ -85,7 +85,7 @@ $cols = F::form('setting')->getData('cols', array());
 				|
 			</li>
 			<li class="trash <?php if(F::app()->input->get('deleted') == 1)echo 'sel';?>">
-				<?php echo Html::link(PostCommentHelper::getStatus(0, 1, false), array('admin/post-comment/index', array(
+				<?php echo HtmlHelper::link(PostCommentHelper::getStatus(0, 1, false), array('admin/post-comment/index', array(
 					'deleted'=>1,
 				)));?>
 				<span class="fc-grey">(<span id="deleted-post-comment-count">
@@ -99,7 +99,7 @@ $cols = F::form('setting')->getData('cols', array());
 	<div class="row">
 		<div class="col-5"><?php
 			if(F::app()->input->get('deleted')){
-				echo Html::select('', array(
+				echo HtmlHelper::select('', array(
 					''=>'批量操作',
 					'undelete'=>F::app()->checkPermission('admin/post-comment/undelete') ? '还原' : false,
 					'remove'=>F::app()->checkPermission('admin/post-comment/remove') ? '永久删除' : false,
@@ -108,7 +108,7 @@ $cols = F::form('setting')->getData('cols', array());
 					'id'=>'batch-action',
 				));
 			}else{
-				echo Html::select('', array(
+				echo HtmlHelper::select('', array(
 					''=>'批量操作',
 					'set-approved'=>F::app()->checkPermission('admin/post-comment/approve') ? '通过审核' : false,
 					'set-disapproved'=>F::app()->checkPermission('admin/post-comment/disapprove') ? '驳回' : false,
@@ -119,7 +119,7 @@ $cols = F::form('setting')->getData('cols', array());
 					'id'=>'batch-action',
 				));
 			}
-			echo Html::link('提交', 'javascript:;', array(
+			echo HtmlHelper::link('提交', 'javascript:;', array(
 				'id'=>'batch-form-submit',
 				'class'=>'btn btn-sm ml5',
 			));
@@ -184,7 +184,7 @@ $cols = F::form('setting')->getData('cols', array());
 		<div class="col-7 fr"><?php $listview->showPager()?></div>
 		<div class="col-5"><?php
 			if(F::app()->input->get('deleted')){
-				echo Html::select('', array(
+				echo HtmlHelper::select('', array(
 					''=>'批量操作',
 					'undelete'=>F::app()->checkPermission('admin/post-comment/undelete') ? '还原' : false,
 					'remove'=>F::app()->checkPermission('admin/post-comment/remove') ? '永久删除' : false,
@@ -193,7 +193,7 @@ $cols = F::form('setting')->getData('cols', array());
 					'id'=>'batch-action-2',
 				));
 			}else{
-				echo Html::select('', array(
+				echo HtmlHelper::select('', array(
 					''=>'批量操作',
 					'set-approved'=>F::app()->checkPermission('admin/post-comment/approve') ? '通过审核' : false,
 					'set-disapproved'=>F::app()->checkPermission('admin/post-comment/disapprove') ? '驳回' : false,
@@ -204,7 +204,7 @@ $cols = F::form('setting')->getData('cols', array());
 					'id'=>'batch-action-2',
 				));
 			}
-			echo Html::link('提交', 'javascript:;', array(
+			echo HtmlHelper::link('提交', 'javascript:;', array(
 				'id'=>'batch-form-submit-2',
 				'class'=>'btn btn-sm ml5',
 			));

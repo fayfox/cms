@@ -1,7 +1,7 @@
 <?php
-use fay\models\tables\Users;
-use fay\helpers\Date;
-use fay\helpers\Html;
+use fay\models\tables\UsersTable;
+use fay\helpers\DateHelper;
+use fay\helpers\HtmlHelper;
 use fay\helpers\ArrayHelper;
 ?>
 <div class="row">
@@ -12,27 +12,27 @@ use fay\helpers\ArrayHelper;
 			</div>
 			<div class="box-content">
 				<div class="form-group">
-					<label class="col-2">用户名</label>
+					<label class="col-2 title">用户名</label>
 					<div class="col-10 pt7"><?php echo $user['user']['username']?></div>
 				</div>
 				<div class="form-group-separator"></div>
 				<div class="form-group">
-					<label class="col-2">昵称</label>
+					<label class="col-2 title">昵称</label>
 					<div class="col-10 pt7"><?php echo $user['user']['nickname']?></div>
 				</div>
 				<div class="form-group-separator"></div>
 				<div class="form-group">
-					<label class="col-2">手机</label>
+					<label class="col-2 title">手机</label>
 					<div class="col-10 pt7"><?php echo $user['user']['mobile']?></div>
 				</div>
 				<div class="form-group-separator"></div>
 				<div class="form-group">
-					<label class="col-2">邮箱</label>
+					<label class="col-2 title">邮箱</label>
 					<div class="col-10 pt7"><?php echo $user['user']['email']?></div>
 				</div>
 				<div class="form-group-separator"></div>
 				<div class="form-group">
-					<label class="col-2">角色</label>
+					<label class="col-2 title">角色</label>
 					<div class="col-10 pt7"><?php
 						$role_titles = ArrayHelper::column($user['roles'], 'title');
 						echo implode(', ', $role_titles);
@@ -40,21 +40,21 @@ use fay\helpers\ArrayHelper;
 				</div>
 				<div class="form-group-separator"></div>
 				<div class="form-group">
-					<label class="col-2">审核状态</label>
+					<label class="col-2 title">审核状态</label>
 					<div class="col-10 pt7"><?php switch($user['user']['status']){
-						case Users::STATUS_UNCOMPLETED:
+						case UsersTable::STATUS_UNCOMPLETED:
 							echo '<span class="fc-blue">用户信息不完整</span>';
 						break;
-						case Users::STATUS_PENDING:
+						case UsersTable::STATUS_PENDING:
 							echo '<span class="fc-orange">待审核</span>';
 						break;
-						case Users::STATUS_VERIFY_FAILED:
+						case UsersTable::STATUS_VERIFY_FAILED:
 							echo '<span class="fc-red">未通过审核</span>';
 						break;
-						case Users::STATUS_VERIFIED:
+						case UsersTable::STATUS_VERIFIED:
 							echo '<span class="fc-green">通过审核</span>';
 						break;
-						case Users::STATUS_NOT_VERIFIED:
+						case UsersTable::STATUS_NOT_VERIFIED:
 							echo '<span class="fc-orange">未验证邮箱或手机</span>';
 						break;
 							
@@ -62,7 +62,7 @@ use fay\helpers\ArrayHelper;
 				</div>
 				<div class="form-group-separator"></div>
 				<div class="form-group">
-					<label class="col-2">登录</label>
+					<label class="col-2 title">登录</label>
 					<div class="col-10 pt7"><?php if($user['user']['block']){
 						echo '<span class="fc-red">限制登录</span>';
 					}else{
@@ -77,32 +77,32 @@ use fay\helpers\ArrayHelper;
 			</div>
 			<div class="box-content">
 				<div class="form-group">
-					<label class="col-2">注册时间</label>
-					<div class="col-10 pt7"><?php echo Date::format($user['profile']['reg_time'])?></div>
+					<label class="col-2 title">注册时间</label>
+					<div class="col-10 pt7"><?php echo DateHelper::format($user['profile']['reg_time'])?></div>
 				</div>
 				<div class="form-group-separator"></div>
 				<div class="form-group">
-					<label class="col-2">注册IP</label>
+					<label class="col-2 title">注册IP</label>
 					<div class="col-10 pt7"><?php if($user['profile']['reg_ip']){?>
 						<em class="abbr" title="<?php echo long2ip($user['profile']['reg_ip'])?>"><?php echo $iplocation->getCountryAndArea(long2ip($user['profile']['reg_ip']))?></em>
 					<?php }?></div>
 				</div>
 				<div class="form-group-separator"></div>
 				<div class="form-group">
-					<label class="col-2">最后登陆时间</label>
-					<div class="col-10 pt7"><?php echo Date::format($user['profile']['last_login_time'])?></div>
+					<label class="col-2 title">最后登陆时间</label>
+					<div class="col-10 pt7"><?php echo DateHelper::format($user['profile']['last_login_time'])?></div>
 				</div>
 				<div class="form-group-separator"></div>
 				<div class="form-group">
-					<label class="col-2">最后登陆IP</label>
+					<label class="col-2 title">最后登陆IP</label>
 					<div class="col-10 pt7"><?php if($user['profile']['last_login_ip']){?>
 						<em class="abbr" title="<?php echo long2ip($user['profile']['last_login_ip'])?>"><?php echo $iplocation->getCountryAndArea(long2ip($user['profile']['last_login_ip']))?></em>
 					<?php }?></div>
 				</div>
 				<div class="form-group-separator"></div>
 				<div class="form-group">
-					<label class="col-2">最后在线时间</label>
-					<div class="col-10 pt7"><?php echo Date::format($user['profile']['last_time_online'])?></div>
+					<label class="col-2 title">最后在线时间</label>
+					<div class="col-10 pt7"><?php echo DateHelper::format($user['profile']['last_time_online'])?></div>
 				</div>
 			</div>
 		</div>
@@ -118,10 +118,10 @@ use fay\helpers\ArrayHelper;
 			$k = 0;
 			foreach($user['props'] as $p){
 				if($k++){
-					echo Html::tag('div', array('class'=>'form-group-separator'), '');
+					echo HtmlHelper::tag('div', array('class'=>'form-group-separator'), '');
 				}?>
 				<div class="form-group">
-					<label class="col-2"><?php echo $p['title']?></label>
+					<label class="col-2 title"><?php echo $p['title']?></label>
 					<div class="col-10 pt7"><?php
 						if(is_array($p['value'])){
 							if(isset($p['value']['title'])){
@@ -131,12 +131,12 @@ use fay\helpers\ArrayHelper;
 								//多选
 								$values = array();
 								foreach($p['value'] as $k=>$v){
-									$values[] = Html::encode($v['title']);
+									$values[] = HtmlHelper::encode($v['title']);
 								}
 								echo implode(', ', $values);
 							}
 						}else{
-							echo Html::encode($p['value']);
+							echo HtmlHelper::encode($p['value']);
 						}
 					?></div>
 				</div>

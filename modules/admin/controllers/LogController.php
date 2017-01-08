@@ -6,7 +6,7 @@ use fay\core\Sql;
 use fay\common\ListView;
 use fay\core\Loader;
 use fay\core\Response;
-use fay\models\tables\Logs;
+use fay\models\tables\LogsTable;
 
 class LogController extends AdminController{
 	public function __construct(){
@@ -16,9 +16,9 @@ class LogController extends AdminController{
 	
 	public function index(){
 		//搜索条件验证，异常数据直接返回404
-		$this->form()->setScene('final')->setRules(array(
+		$this->form('search')->setScene('final')->setRules(array(
 			array('orderby', 'range', array(
-				'range'=>Logs::model()->getFields(),
+				'range'=>LogsTable::model()->getFields(),
 			)),
 			array('order', 'range', array(
 				'range'=>array('asc', 'desc'),

@@ -4,11 +4,11 @@ namespace cms\modules\admin\controllers;
 use cms\library\AdminController;
 use fay\core\Sql;
 use fay\common\ListView;
-use fay\models\tables\AnalystSites;
-use fay\helpers\Date;
-use fay\helpers\Request;
+use fay\models\tables\AnalystSitesTable;
+use fay\helpers\DateHelper;
+use fay\helpers\RequestHelper;
 use fay\core\Loader;
-use fay\models\tables\AnalystVisits;
+use fay\models\tables\AnalystVisitsTable;
 
 class AnalystController extends AdminController{
 	public function __construct(){
@@ -47,7 +47,7 @@ class AnalystController extends AdminController{
 		}
 		if($this->input->get('ip')){
 			$sql->where(array(
-				'ip_int = ?'=>$this->input->get('ip', 'trim|Request::ip2int'),
+				'ip_int = ?'=>$this->input->get('ip', 'trim|RequestHelper::ip2int'),
 			));
 		}
 		if($this->input->get('site')){
@@ -68,7 +68,7 @@ class AnalystController extends AdminController{
 		));
 		
 		//所有站点
-		$this->view->sites = AnalystSites::model()->fetchAll(array(
+		$this->view->sites = AnalystSitesTable::model()->fetchAll(array(
 			'deleted = 0',
 		), 'id,title');
 		
@@ -110,7 +110,7 @@ class AnalystController extends AdminController{
 		}
 		if($this->input->get('ip')){
 			$sql->where(array(
-				'ip_int = ?'=>Request::ip2int($this->input->get('ip', 'trim')),
+				'ip_int = ?'=>RequestHelper::ip2int($this->input->get('ip', 'trim')),
 			));
 		}
 		if($this->input->get('site')){
@@ -126,7 +126,7 @@ class AnalystController extends AdminController{
 		));
 
 		//所有站点
-		$this->view->sites = AnalystSites::model()->fetchAll(array(
+		$this->view->sites = AnalystSitesTable::model()->fetchAll(array(
 			'deleted = 0',
 		), 'id,title');
 		
@@ -139,10 +139,10 @@ class AnalystController extends AdminController{
 	
 	public function pv(){
 		//搜索条件验证，异常数据直接返回404
-		$this->form()->setScene('final')->setRules(array(
+		$this->form('search')->setScene('final')->setRules(array(
 			array(array('start_time', 'end_time'), 'datetime'),
 			array('orderby', 'range', array(
-				'range'=>AnalystVisits::model()->getFields(),
+				'range'=>AnalystVisitsTable::model()->getFields(),
 			)),
 			array('order', 'range', array(
 				'range'=>array('asc', 'desc'),
@@ -159,10 +159,10 @@ class AnalystController extends AdminController{
 			->countBy('DISTINCT url')
 		;
 		
-		$this->view->today = Date::today();
-		$this->view->yesterday = Date::yesterday();
-		$this->view->week = Date::daysbefore(6);
-		$this->view->month = Date::daysbefore(29);
+		$this->view->today = DateHelper::today();
+		$this->view->yesterday = DateHelper::yesterday();
+		$this->view->week = DateHelper::daysbefore(6);
+		$this->view->month = DateHelper::daysbefore(29);
 		
 		if($this->input->get('start_time') || $this->input->get('end_time')){
 			$start_time = $this->input->get('start_time', 'strtotime');
@@ -203,7 +203,7 @@ class AnalystController extends AdminController{
 		}
 		if($this->input->get('ip')){
 			$sql->where(array(
-				'ip_int = ?'=>$this->input->get('ip', 'trim|Request::ip2int'),
+				'ip_int = ?'=>$this->input->get('ip', 'trim|RequestHelper::ip2int'),
 			));
 		}
 		if($this->input->get('site')){
@@ -227,7 +227,7 @@ class AnalystController extends AdminController{
 		));
 		
 		//所有站点
-		$this->view->sites = AnalystSites::model()->fetchAll(array(
+		$this->view->sites = AnalystSitesTable::model()->fetchAll(array(
 			'deleted = 0',
 		), 'id,title');
 		

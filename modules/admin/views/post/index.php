@@ -1,7 +1,11 @@
 <?php
-use fay\helpers\Html;
-use fay\models\tables\Posts;
+use fay\helpers\HtmlHelper;
+use fay\models\tables\PostsTable;
 use cms\helpers\ListTableHelper;
+
+/**
+ * @var $listview \fay\common\ListView
+ */
 
 $cols = F::form('setting')->getData('cols', array());
 ?>
@@ -25,7 +29,7 @@ $cols = F::form('setting')->getData('cols', array());
 				' | ',
 				F::form('search')->select('cat_id', array(
 					''=>'--分类--',
-				) + Html::getSelectOptions($cats, 'id', 'title'), array(
+				) + HtmlHelper::getSelectOptions($cats, 'id', 'title'), array(
 					'class'=>'form-control',
 				));
 				if(in_array('category', $enabled_boxes)){
@@ -76,31 +80,31 @@ $cols = F::form('setting')->getData('cols', array());
 				</span>)</span>
 				|
 			</li>
-			<li class="publish <?php if(F::app()->input->get('status') == Posts::STATUS_PUBLISHED && F::app()->input->get('deleted') != 1)echo 'sel';?>">
-				<a href="<?php echo $this->url('admin/post/index', array('status'=>Posts::STATUS_PUBLISHED))?>">已发布</a>
+			<li class="publish <?php if(F::app()->input->get('status') == PostsTable::STATUS_PUBLISHED && F::app()->input->get('deleted') != 1)echo 'sel';?>">
+				<a href="<?php echo $this->url('admin/post/index', array('status'=>PostsTable::STATUS_PUBLISHED))?>">已发布</a>
 				<span class="fc-grey">(<span id="published-post-count">
 					<img src="<?php echo $this->assets('images/throbber.gif')?>" />
 				</span>)</span>
 				|
 			</li>
 			<?php if(F::app()->post_review){//仅开启审核时显示?>
-			<li class="publish <?php if(F::app()->input->get('status') == Posts::STATUS_PENDING && F::app()->input->get('deleted') != 1)echo 'sel';?>">
-				<a href="<?php echo $this->url('admin/post/index', array('status'=>Posts::STATUS_PENDING))?>">待审核</a>
+			<li class="publish <?php if(F::app()->input->get('status') == PostsTable::STATUS_PENDING && F::app()->input->get('deleted') != 1)echo 'sel';?>">
+				<a href="<?php echo $this->url('admin/post/index', array('status'=>PostsTable::STATUS_PENDING))?>">待审核</a>
 				<span class="fc-grey">(<span id="pending-post-count">
 					<img src="<?php echo $this->assets('images/throbber.gif')?>" />
 				</span>)</span>
 				|
 			</li>
-			<li class="publish <?php if(F::app()->input->get('status') == Posts::STATUS_REVIEWED && F::app()->input->get('deleted') != 1)echo 'sel';?>">
-				<a href="<?php echo $this->url('admin/post/index', array('status'=>Posts::STATUS_REVIEWED))?>">通过审核</a>
+			<li class="publish <?php if(F::app()->input->get('status') == PostsTable::STATUS_REVIEWED && F::app()->input->get('deleted') != 1)echo 'sel';?>">
+				<a href="<?php echo $this->url('admin/post/index', array('status'=>PostsTable::STATUS_REVIEWED))?>">通过审核</a>
 				<span class="fc-grey">(<span id="reviewed-post-count">
 					<img src="<?php echo $this->assets('images/throbber.gif')?>" />
 				</span>)</span>
 				|
 			</li>
 			<?php }?>
-			<li class="draft <?php if(F::app()->input->get('status', 'intval') === Posts::STATUS_DRAFT && F::app()->input->get('deleted') != 1)echo 'sel';?>">
-				<a href="<?php echo $this->url('admin/post/index', array('status'=>Posts::STATUS_DRAFT))?>">草稿</a>
+			<li class="draft <?php if(F::app()->input->get('status', 'intval') === PostsTable::STATUS_DRAFT && F::app()->input->get('deleted') != 1)echo 'sel';?>">
+				<a href="<?php echo $this->url('admin/post/index', array('status'=>PostsTable::STATUS_DRAFT))?>">草稿</a>
 				<span class="fc-grey">(<span id="draft-post-count"><img src="<?php echo $this->assets('images/throbber.gif')?>" /></span>)</span>
 				|
 			</li>
@@ -117,7 +121,7 @@ $cols = F::form('setting')->getData('cols', array());
 	<div class="row">
 		<div class="col-5"><?php
 			if(F::app()->input->get('deleted')){
-				echo Html::select('', array(
+				echo HtmlHelper::select('', array(
 					''=>'批量操作',
 					'undelete'=>F::app()->checkPermission('admin/post/undelete') ? '还原' : false,
 					'remove'=>F::app()->checkPermission('admin/post/remove') ? '永久删除' : false,
@@ -126,7 +130,7 @@ $cols = F::form('setting')->getData('cols', array());
 					'id'=>'batch-action',
 				));
 			}else{
-				echo Html::select('', array(
+				echo HtmlHelper::select('', array(
 					''=>'批量操作',
 					'set-published'=>((F::app()->post_review && F::app()->checkPermission('admin/post/publish')) ||
 						(!F::app()->post_review && F::app()->checkPermission('admin/post/edit'))) ? '标记为已发布' : false,
@@ -139,7 +143,7 @@ $cols = F::form('setting')->getData('cols', array());
 					'id'=>'batch-action',
 				));
 			}
-			echo Html::link('提交', 'javascript:;', array(
+			echo HtmlHelper::link('提交', 'javascript:;', array(
 				'id'=>'batch-form-submit',
 				'class'=>'btn btn-sm ml5',
 			));
@@ -279,7 +283,7 @@ $cols = F::form('setting')->getData('cols', array());
 		<div class="col-7 fr"><?php $listview->showPager()?></div>
 		<div class="col-5"><?php
 			if(F::app()->input->get('deleted')){
-				echo Html::select('', array(
+				echo HtmlHelper::select('', array(
 					''=>'批量操作',
 					'undelete'=>F::app()->checkPermission('admin/post/undelete') ? '还原' : false,
 					'remove'=>F::app()->checkPermission('admin/post/remove') ? '永久删除' : false,
@@ -288,7 +292,7 @@ $cols = F::form('setting')->getData('cols', array());
 					'id'=>'batch-action-2',
 				));
 			}else{
-				echo Html::select('', array(
+				echo HtmlHelper::select('', array(
 					''=>'批量操作',
 					'set-published'=>((F::app()->post_review && F::app()->checkPermission('admin/post/publish')) ||
 						(!F::app()->post_review && F::app()->checkPermission('admin/post/edit'))) ? '标记为已发布' : false,
@@ -301,7 +305,7 @@ $cols = F::form('setting')->getData('cols', array());
 					'id'=>'batch-action-2',
 				));
 			}
-			echo Html::link('提交', 'javascript:;', array(
+			echo HtmlHelper::link('提交', 'javascript:;', array(
 				'id'=>'batch-form-submit-2',
 				'class'=>'btn btn-sm ml5',
 			));

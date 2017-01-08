@@ -2,12 +2,12 @@
 namespace cms\modules\api\controllers;
 
 use cms\library\ApiController;
-use fay\helpers\Request;
+use fay\helpers\RequestHelper;
 use fay\helpers\StringHelper;
-use fay\helpers\Date;
-use fay\models\tables\AnalystMacs;
-use fay\models\tables\AnalystVisits;
-use fay\services\Analyst;
+use fay\helpers\DateHelper;
+use fay\models\tables\AnalystMacsTable;
+use fay\models\tables\AnalystVisitsTable;
+use fay\services\AnalystService;
 
 /**
  * 访问统计
@@ -32,15 +32,15 @@ class AnalystController extends ApiController{
 				setcookie('fmac', $fmac, $this->current_time + 3600 * 24 * 365, '/', $this->config->get('tld'));
 				
 				//获取搜索引擎信息
-				$se = Request::getSearchEngine($refer);
-				$mac_id = AnalystMacs::model()->insert(array(
+				$se = RequestHelper::getSearchEngine($refer);
+				$mac_id = AnalystMacsTable::model()->insert(array(
 					'user_agent'=>$_SERVER['HTTP_USER_AGENT'],
 					'browser'=>$this->input->get('b'),
 					'browser_version'=>$this->input->get('bv'),
 					'shell'=>$this->input->get('s'),
 					'shell_version'=>$this->input->get('sv'),
 					'os'=>$this->input->get('os'),
-					'ip_int'=>Request::ip2int($this->ip),
+					'ip_int'=>RequestHelper::ip2int($this->ip),
 					'screen_width'=>$this->input->get('sw', 'intval'),
 					'screen_height'=>$this->input->get('sh', 'intval'),
 					'url'=>$url,
@@ -55,9 +55,9 @@ class AnalystController extends ApiController{
 					'site'=>$this->input->get('si', 'intval'),
 				));
 				
-				AnalystVisits::model()->insert(array(
+				AnalystVisitsTable::model()->insert(array(
 					'mac'=>$mac_id,
-					'ip_int'=>Request::ip2int($this->ip),
+					'ip_int'=>RequestHelper::ip2int($this->ip),
 					'refer'=>$refer,
 					'url'=>$url,
 					'trackid'=>$trackid,
@@ -73,21 +73,21 @@ class AnalystController extends ApiController{
 				));
 			}else{
 				//非首次访问
-				$fmac = Analyst::service()->getFMac();
-				$mac_id = Analyst::service()->getMacId($fmac);
+				$fmac = AnalystService::service()->getFMac();
+				$mac_id = AnalystService::service()->getMacId($fmac);
 				if($mac_id){
 					//一小时内重复访问不新增记录，仅递增views
-					if($record = AnalystVisits::model()->fetchRow(array(
+					if($record = AnalystVisitsTable::model()->fetchRow(array(
 						'mac = ?'=>$mac_id,
 						'short_url = ?'=>$short_url,
 						'create_date = ?'=>$date,
 						'hour = ?'=>$hour,
 					), 'id')){
-						AnalystVisits::model()->incr($record['id'], 'views', 1);
+						AnalystVisitsTable::model()->incr($record['id'], 'views', 1);
 					}else{
-						AnalystVisits::model()->insert(array(
+						AnalystVisitsTable::model()->insert(array(
 							'mac'=>$mac_id,
-							'ip_int'=>Request::ip2int($this->ip),
+							'ip_int'=>RequestHelper::ip2int($this->ip),
 							'refer'=>$refer,
 							'url'=>$url,
 							'trackid'=>$trackid,

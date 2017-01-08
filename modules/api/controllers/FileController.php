@@ -2,15 +2,14 @@
 namespace cms\modules\api\controllers;
 
 use cms\library\ApiController;
-use fay\services\File;
-use fay\models\tables\Files;
-use fay\helpers\Image;
-use fay\helpers\SecurityCode;
+use fay\services\FileService;
+use fay\models\tables\FilesTable;
+use fay\helpers\ImageHelper;
+use fay\helpers\SecurityCodeHelper;
 use fay\core\Validator;
 use fay\core\HttpException;
-use fay\core\Loader;
 use fay\helpers\StringHelper;
-use fay\services\Option;
+use fay\services\OptionService;
 
 /**
  * 文件
@@ -36,11 +35,11 @@ class FileController extends ApiController{
 		$check = $validator->check(array(
 			array(array('f'), 'required'),
 			array(array('t'), 'range', array('range'=>array(
-				File::PIC_ORIGINAL,
-				File::PIC_THUMBNAIL,
-				File::PIC_CROP,
-				File::PIC_RESIZE,
-				File::PIC_CUT
+				FileService::PIC_ORIGINAL,
+				FileService::PIC_THUMBNAIL,
+				FileService::PIC_CROP,
+				FileService::PIC_RESIZE,
+				FileService::PIC_CUT
 			))),
 			array(array('x','y', 'dw', 'dh', 'w', 'h'), 'int'),
 		));
@@ -54,7 +53,7 @@ class FileController extends ApiController{
 		}
 		
 		//显示模式
-		$t = $this->input->get('t', 'intval', File::PIC_ORIGINAL);
+		$t = $this->input->get('t', 'intval', FileService::PIC_ORIGINAL);
 		
 		//文件名或文件id号
 		$f = $this->input->get('f');
@@ -63,10 +62,10 @@ class FileController extends ApiController{
 				//这里不直接返回图片不存在的提示，因为可能需要缩放，让后面的逻辑去处理
 				$file = false;
 			}else{
-				$file = Files::model()->find($f);
+				$file = FilesTable::model()->find($f);
 			}
 		}else{
-			$file = Files::model()->fetchRow(array('raw = ?'=>$f));
+			$file = FilesTable::model()->fetchRow(array('raw = ?'=>$f));
 		}
 
 		if(isset($_SERVER['HTTP_IF_NONE_MATCH']) && $file['raw_name'] == $_SERVER['HTTP_IF_NONE_MATCH']){
@@ -82,15 +81,15 @@ class FileController extends ApiController{
 		header('Etag:'.$file['raw_name']);
 		
 		switch ($t) {
-			case File::PIC_ORIGINAL:
+			case FileService::PIC_ORIGINAL:
 				//直接输出图片
 				$this->_pic($file);
 				break;
-			case File::PIC_THUMBNAIL:
+			case FileService::PIC_THUMBNAIL:
 				//输出图片的缩略图
 				$this->_thumbnail($file);
 				break;
-			case File::PIC_CROP:
+			case FileService::PIC_CROP:
 				/**
 				 * 根据起始坐标，宽度及宽高比裁剪后输出图片
 				 * @parameter $_GET['x'] 起始点x坐标
@@ -102,7 +101,7 @@ class FileController extends ApiController{
 				 */
 				$this->_crop($file);
 				break;
-			case File::PIC_RESIZE:
+			case FileService::PIC_RESIZE:
 				/**
 				 * 根据给定的宽高对图片进行裁剪后输出图片
 				 * @parameter $_GET['dw'] 输出图像宽度
@@ -112,7 +111,7 @@ class FileController extends ApiController{
 				 */
 				$this->_resize($file);
 				break;
-			case File::PIC_CUT:
+			case FileService::PIC_CUT:
 				/**
 				 * 根据给定的宽高对图片进行裁剪后输出图片
 				 * @parameter $_GET['dw'] 输出图像宽度
@@ -173,7 +172,7 @@ class FileController extends ApiController{
 		}
 		
 		if($file !== false){
-			$img = Image::getImage((defined('NO_REWRITE') ? './public/' : '').$file['file_path'].$file['raw_name'].$file['file_ext']);
+			$img = ImageHelper::getImage((defined('NO_REWRITE') ? './public/' : '').$file['file_path'].$file['raw_name'].$file['file_ext']);
 			
 			if($dw == 0){
 				$dw = $w;
@@ -181,21 +180,21 @@ class FileController extends ApiController{
 			if($dh == 0){
 				$dh = $h;
 			}
-			$img = Image::crop($img, $x, $y, $w, $h);
+			$img = ImageHelper::crop($img, $x, $y, $w, $h);
 			if($dw != $w || $dh != $h){
-				$img = Image::resize($img, $dw, $dh);
+				$img = ImageHelper::resize($img, $dw, $dh);
 			}
 			
 			//处理过的图片统一以jpg方式显示
 			header('Content-type: image/jpeg');
-			imagejpeg($img, null, $this->input->get('q', 'intval', Option::get('system:image_quality', 75)));
+			imagejpeg($img, null, $this->input->get('q', 'intval', OptionService::get('system:image_quality', 75)));
 		}else{
 			//图片不存在，显示一张默认图片吧
 			$spare = $this->config->get($this->input->get('s', 'trim', 'default'), 'noimage');
 			$spare || $spare = $this->config->get('default', 'noimage');
-			$img = Image::getImage($spare);
+			$img = ImageHelper::getImage($spare);
 			header('Content-type: image/jpeg');
-			$img = Image::resize($img, $dw ? $dw : 325, $dh ? $dh : 235);
+			$img = ImageHelper::resize($img, $dw ? $dw : 325, $dh ? $dh : 235);
 			imagejpeg($img);
 		}
 	}
@@ -216,19 +215,19 @@ class FileController extends ApiController{
 				$dh = $file['image_height'];
 			}
 			
-			$img = Image::getImage((defined('NO_REWRITE') ? './public/' : '').$file['file_path'].$file['raw_name'].$file['file_ext']);
+			$img = ImageHelper::getImage((defined('NO_REWRITE') ? './public/' : '').$file['file_path'].$file['raw_name'].$file['file_ext']);
 			
-			$img = Image::resize($img, $dw, $dh);
+			$img = ImageHelper::resize($img, $dw, $dh);
 			
 			//处理过的图片统一以jpg方式显示
 			header('Content-type: image/jpeg');
-			imagejpeg($img, null, $this->input->get('q', 'intval', Option::get('system:image_quality', 75)));
+			imagejpeg($img, null, $this->input->get('q', 'intval', OptionService::get('system:image_quality', 75)));
 		}else{
 			$spare = $this->config->get($this->input->get('s', 'trim', 'default'), 'noimage');
 			$spare || $spare = $this->config->get('default', 'noimage');
-			$img = Image::getImage($spare);
+			$img = ImageHelper::getImage($spare);
 			header('Content-type: image/jpeg');
-			$img = Image::resize($img, $dw ? $dw : 325, $dh ? $dh : 235);
+			$img = ImageHelper::resize($img, $dw ? $dw : 325, $dh ? $dh : 235);
 			imagejpeg($img);
 		}
 	}
@@ -243,19 +242,19 @@ class FileController extends ApiController{
 			$dw || $dw = $file['image_width'];
 			$dh || $dh = $file['image_height'];
 			
-			$img = Image::getImage((defined('NO_REWRITE') ? './public/' : '').$file['file_path'].$file['raw_name'].$file['file_ext']);
+			$img = ImageHelper::getImage((defined('NO_REWRITE') ? './public/' : '').$file['file_path'].$file['raw_name'].$file['file_ext']);
 			
-			$img = Image::resize($img, $dw, $dh);
+			$img = ImageHelper::resize($img, $dw, $dh);
 			
 			//处理过的图片统一以jpg方式显示
 			header('Content-type: image/jpeg');
-			imagejpeg($img, null, $this->input->get('q', 'intval', Option::get('system:image_quality', 75)));
+			imagejpeg($img, null, $this->input->get('q', 'intval', OptionService::get('system:image_quality', 75)));
 		}else{
 			$spare = $this->config->get($this->input->get('s', 'trim', 'default'), 'noimage');
 			$spare || $spare = $this->config->get('default', 'noimage');
-			$img = Image::getImage($spare);
+			$img = ImageHelper::getImage($spare);
 			header('Content-type: image/jpeg');
-			$img = Image::resize($img, $dw ? $dw : 325, $dh ? $dh : 235);
+			$img = ImageHelper::resize($img, $dw ? $dw : 325, $dh ? $dh : 235);
 			imagejpeg($img);
 		}
 	}
@@ -267,7 +266,7 @@ class FileController extends ApiController{
 	 * @parameter int $h 验证码高度，默认40像素
 	 */
 	public function vcode(){
-		$sc = new SecurityCode($this->input->get('l', 'intval', 4), $this->input->get('w', 'intval', 110), $this->input->get('h', 'intval', 40));
+		$sc = new SecurityCodeHelper($this->input->get('l', 'intval', 4), $this->input->get('w', 'intval', 110), $this->input->get('h', 'intval', 40));
 		//$sc->ext_line = false;
 		$sc->create();
 		\F::session()->set('vcode', strtolower($sc->randnum));
@@ -278,8 +277,7 @@ class FileController extends ApiController{
 	 * @parameter string $data 二维码内容，经base64编码后的字符串
 	 */
 	public function qrcode(){
-		Loader::vendor('phpqrcode/qrlib');
-		\QRcode::png(base64_decode($this->input->get('data')), false, QR_ECLEVEL_M, 4, 2);
+		\PHPQRCode\QRcode::png(base64_decode($this->input->get('data')), false, 'L', 4, 2);
 	}
 	
 	/**
@@ -288,7 +286,7 @@ class FileController extends ApiController{
 	 */
 	public function download(){
 		if($file_id = $this->input->get('id', 'intval')){
-			if($file = Files::model()->find($file_id)){
+			if($file = FilesTable::model()->find($file_id)){
 				if(substr((defined('NO_REWRITE') ? './public/' : '').$file['file_path'], 0, 4) == './..'){
 					//私有文件不允许在此方法下载
 					throw new HttpException('文件不存在');
@@ -305,7 +303,7 @@ class FileController extends ApiController{
 					$filename = $file['raw_name'].$file['file_ext'];
 				}
 				
-				Files::model()->incr($file_id, 'downloads', 1);
+				FilesTable::model()->incr($file_id, 'downloads', 1);
 				$data = file_get_contents((defined('NO_REWRITE') ? './public/' : '').$file['file_path'].$file['raw_name'].$file['file_ext']);
 				if (strpos($_SERVER['HTTP_USER_AGENT'], "MSIE") !== FALSE){
 					header('Content-Type: "'.$file['file_type'].'"');

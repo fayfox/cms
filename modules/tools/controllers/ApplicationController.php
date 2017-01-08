@@ -3,17 +3,17 @@ namespace cms\modules\tools\controllers;
 
 use cms\library\Db;
 use cms\library\ToolsController;
-use fay\services\File;
-use fay\services\Category;
+use fay\services\FileService;
+use fay\services\CategoryService;
 use fay\helpers\StringHelper;
-use fay\models\tables\Users;
-use fay\services\Menu;
-use fay\models\tables\Categories;
-use fay\models\tables\Menus;
-use fay\services\Flash;
-use fay\services\Option;
-use fay\helpers\Request;
-use fay\models\tables\Roles;
+use fay\models\tables\UsersTable;
+use fay\services\MenuService;
+use fay\models\tables\CategoriesTable;
+use fay\models\tables\MenusTable;
+use fay\services\FlashService;
+use fay\services\OptionService;
+use fay\helpers\RequestHelper;
+use fay\models\tables\RolesTable;
 use fay\core\Response;
 
 class ApplicationController extends ToolsController{
@@ -39,9 +39,9 @@ class ApplicationController extends ToolsController{
 	public function create(){
 		$this->layout->subtitle = '创建项目';
 		
-		Flash::set('此工具用于快速创建一个application项目', 'info');
+		FlashService::set('此工具用于快速创建一个application项目', 'info');
 		if(!is_writable(BASEPATH.'..'.DS.'application')){
-			Flash::set('application目录不可写！用此功能创建项目，请确保系统对application目录拥有写权限。');
+			FlashService::set('application目录不可写！用此功能创建项目，请确保系统对application目录拥有写权限。');
 		}
 		
 		if($this->input->post()){
@@ -69,26 +69,26 @@ class ApplicationController extends ToolsController{
 				$table_prefix,
 				$app_name,
 			), $config_file);
-			File::createFile(BASEPATH.'..'.DS.'application/'.$app_name.'/configs/main.php', $config_file);
+			FileService::createFile(BASEPATH.'..'.DS.'application/'.$app_name.'/configs/main.php', $config_file);
 			
 			//创建前端控制器基类
 			$front_controller = file_get_contents(SYSTEM_PATH.'cms/modules/tools/views/application/_templates/library/FrontController.txt');
 			$front_controller = str_replace('{{$name}}', $app_name, $front_controller);
-			File::createFile(BASEPATH.'..'.DS.'application/'.$app_name.'/library/FrontController.php', $front_controller);
+			FileService::createFile(BASEPATH.'..'.DS.'application/'.$app_name.'/library/FrontController.php', $front_controller);
 			
 			//创建默认控制器
 			$index_controller = file_get_contents(SYSTEM_PATH.'cms/modules/tools/views/application/_templates/module/IndexController.txt');
 			$index_controller = str_replace('{{$name}}', $app_name, $index_controller);
-			File::createFile(BASEPATH.'..'.DS.'application/'.$app_name.'/modules/frontend/controllers/IndexController.php', $index_controller);
+			FileService::createFile(BASEPATH.'..'.DS.'application/'.$app_name.'/modules/frontend/controllers/IndexController.php', $index_controller);
 			
 			//创建默认视图
-			File::createFile(BASEPATH.'..'.DS.'application/'.$app_name.'/modules/frontend/views/index/index.php', file_get_contents(SYSTEM_PATH.'cms/modules/tools/views/application/_templates/module/index.txt'));
+			FileService::createFile(BASEPATH.'..'.DS.'application/'.$app_name.'/modules/frontend/views/index/index.php', file_get_contents(SYSTEM_PATH.'cms/modules/tools/views/application/_templates/module/index.txt'));
 			
 			//创建默认layout
-			File::createFile(BASEPATH.'..'.DS.'application/'.$app_name.'/modules/frontend/views/layouts/frontend.php', file_get_contents(SYSTEM_PATH.'cms/modules/tools/views/application/_templates/module/frontend.txt'));
+			FileService::createFile(BASEPATH.'..'.DS.'application/'.$app_name.'/modules/frontend/views/layouts/frontend.php', file_get_contents(SYSTEM_PATH.'cms/modules/tools/views/application/_templates/module/frontend.txt'));
 			
 			//创建默认css
-			File::createFile(BASEPATH.'apps/'.$app_name.'/css/style.css', file_get_contents(SYSTEM_PATH.'cms/modules/tools/views/application/_templates/static/style.css'));
+			FileService::createFile(BASEPATH.'apps/'.$app_name.'/css/style.css', file_get_contents(SYSTEM_PATH.'cms/modules/tools/views/application/_templates/static/style.css'));
 			
 			if($this->input->post('database')){
 				//安装数据库
@@ -118,25 +118,25 @@ class ApplicationController extends ToolsController{
 					'username'=>$this->input->post('user_username'),
 					'password'=>$password,
 					'salt'=>$salt,
-					'status'=>Users::STATUS_VERIFIED,
+					'status'=>UsersTable::STATUS_VERIFIED,
 					'admin'=>1,
 				));
 				
 				$this->db->insert('user_profile', array(
 					'user_id'=>$user_id,
 					'reg_time'=>$this->current_time,
-					'reg_ip'=>Request::ip2int(Request::getIP()),
+					'reg_ip'=>RequestHelper::ip2int(RequestHelper::getIP()),
 					'trackid'=>'tools_create',
 				));
 				
 				$this->db->insert('users_roles', array(
 					'user_id'=>$user_id,
-					'role_id'=>Roles::ITEM_SUPER_ADMIN,
+					'role_id'=>RolesTable::ITEM_SUPER_ADMIN,
 				));
 				
-				Option::set('site:sitename', $this->input->post('sitename'));
+				OptionService::set('site:sitename', $this->input->post('sitename'));
 				
-				File::createFile(BASEPATH.'..'.DS.'application/'.$app_name.'/runtimes/installed.lock', date('Y-m-d H:i:s [') . Request::getIP() . "] \r\ninstallation-completed");
+				FileService::createFile(BASEPATH.'..'.DS.'application/'.$app_name.'/runtimes/installed.lock', date('Y-m-d H:i:s [') . RequestHelper::getIP() . "] \r\ninstallation-completed");
 			}
 		}
 		
@@ -146,7 +146,7 @@ class ApplicationController extends ToolsController{
 	public function isAppNotExist(){
 		$value = $this->input->post('value');
 		
-		$apps = File::getFileList(APPLICATION_PATH.'..');
+		$apps = FileService::getFileList(APPLICATION_PATH.'..');
 		foreach($apps as $app){
 			if($value == $app['name']){
 				Response::json('', 0, '项目名已存在');
@@ -201,15 +201,15 @@ class ApplicationController extends ToolsController{
 	 * 对categories表进行索引
 	 */
 	private function indexCats(){
-		Categories::model()->setDb($this->db);
-		Category::service()->buildIndex();
+		CategoriesTable::model()->setDb($this->db);
+		CategoryService::service()->buildIndex();
 	}
 	
 	/**
 	 * 对menus表进行索引
 	 */
 	private function indexMenus(){
-		Menus::model()->setDb($this->db);
-		Menu::service()->buildIndex();
+		MenusTable::model()->setDb($this->db);
+		MenuService::service()->buildIndex();
 	}
 }

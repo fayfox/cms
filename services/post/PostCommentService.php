@@ -1,16 +1,16 @@
 <?php
-namespace cms\models\post;
+namespace cms\services\post;
 
-use fay\core\Model;
-use fay\models\tables\PostComments;
+use fay\core\Service;
+use fay\models\tables\PostCommentsTable;
 
-class Comment extends Model{
+class PostCommentService extends Service{
 	/**
 	 * @param string $class_name
-	 * @return Comment
+	 * @return PostCommentService
 	 */
-	public static function model($class_name=__CLASS__){
-		return parent::model($class_name);
+	public static function service($class_name=__CLASS__){
+		return parent::service($class_name);
 	}
 	
 	/**
@@ -23,7 +23,7 @@ class Comment extends Model{
 		if($status !== null){
 			$conditions['status = ?'] = $status;
 		}
-		$result = PostComments::model()->fetchRow(array(
+		$result = PostCommentsTable::model()->fetchRow(array(
 			'deleted = 0',
 			'status = ?'=>$status ? $status : false,
 		), 'COUNT(*)');
@@ -35,7 +35,7 @@ class Comment extends Model{
 	 * @return string
 	 */
 	public function getDeletedCount(){
-		$result = PostComments::model()->fetchRow(array('deleted = 1'), 'COUNT(*)');
+		$result = PostCommentsTable::model()->fetchRow(array('deleted = 1'), 'COUNT(*)');
 		return $result['COUNT(*)'];
 	}	
 }

@@ -1,17 +1,16 @@
 <?php
-namespace cms\models;
+namespace cms\services;
 
-use fay\core\Model;
-use fay\models\tables\Feeds;
+use fay\core\Service;
+use fay\models\tables\FeedsTable;
 
-class Feed extends Model{
-
+class FeedService extends Service{
 	/**
 	 * @param string $class_name
-	 * @return Feed
+	 * @return FeedService
 	 */
-	public static function model($class_name = __CLASS__){
-		return parent::model($class_name);
+	public static function service($class_name = __CLASS__){
+		return parent::service($class_name);
 	}
 	
 	/**
@@ -23,7 +22,7 @@ class Feed extends Model{
 		if($status !== null){
 			$conditions['status = ?'] = $status;
 		}
-		$result = Feeds::model()->fetchRow($conditions, 'COUNT(*)');
+		$result = FeedsTable::model()->fetchRow($conditions, 'COUNT(*)');
 		return $result['COUNT(*)'];
 	}
 	
@@ -31,7 +30,7 @@ class Feed extends Model{
 	 * 获取已删除的动态数
 	 */
 	public function getDeletedCount(){
-		$result = Feeds::model()->fetchRow('deleted = 1', 'COUNT(*)');
+		$result = FeedsTable::model()->fetchRow('deleted = 1', 'COUNT(*)');
 		return $result['COUNT(*)'];
 	}
 }

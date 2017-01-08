@@ -2,15 +2,14 @@
 namespace cms\modules\admin\controllers;
 
 use cms\library\AdminController;
-use fay\models\tables\Widgets;
+use fay\models\tables\WidgetsTable;
 use fay\helpers\StringHelper;
-use fay\models\tables\Actionlogs;
+use fay\models\tables\ActionlogsTable;
 use fay\core\Sql;
 use fay\common\ListView;
-use fay\services\File;
+use fay\services\FileService;
 use fay\core\Response;
 use fay\core\HttpException;
-use fay\core\Loader;
 
 class WidgetController extends AdminController{
 	public function __construct(){
@@ -29,13 +28,13 @@ class WidgetController extends AdminController{
 		$widget_instances = array();
 		
 		//获取当前application下的widgets
-		$app_widgets = File::getFileList(APPLICATION_PATH . 'widgets');
+		$app_widgets = FileService::getFileList(APPLICATION_PATH . 'widgets');
 		foreach($app_widgets as $w){
 			$widget_instances[] = \F::widget()->get($w['name'], true);
 		}
 		
 		//获取系统公用widgets
-		$common_widgets = File::getFileList(SYSTEM_PATH . 'fay' . DS . 'widgets');
+		$common_widgets = FileService::getFileList(SYSTEM_PATH . 'fay' . DS . 'widgets');
 		foreach($common_widgets as $w){
 			$widget_instances[] = \F::widget()->get('fay/'.$w['name'], true);
 		}
@@ -54,6 +53,9 @@ class WidgetController extends AdminController{
 	}
 	
 	public function edit(){
+		//很多小工具包含代码提交，发送此header防止chrome阻止提交
+		header('X-XSS-Protection: 0');
+		
 		$this->layout->sublink = array(
 			'uri'=>array('admin/widgetarea/index'),
 			'text'=>'小工具域',
@@ -61,15 +63,14 @@ class WidgetController extends AdminController{
 		
 		$id = $this->input->get('id', 'intval');
 
-		$widget = Widgets::model()->find($id);
+		$widget = WidgetsTable::model()->find($id);
 		if(!$widget){
 			throw new HttpException('指定的小工具ID不存在');
 		}
 		$widget_obj = \F::widget()->get($widget['widget_name'], true);
 		
 		if(file_exists($widget_obj->path . 'README.md')){
-			Loader::vendor('Markdown/markdown');
-			$this->layout->_help_content = '<div class="text">' . Markdown(file_get_contents($widget_obj->path . 'README.md')) . '</div>';
+			$this->layout->_help_content = '<div class="text">' . \Michelf\Markdown::defaultTransform(file_get_contents($widget_obj->path . 'README.md')) . '</div>';
 		}
 		
 		$this->form('widget')->setRules(array(
@@ -92,7 +93,7 @@ class WidgetController extends AdminController{
 			$f_widget_cache = $this->input->post('f_widget_cache');
 			$f_widget_cache_expire = $this->input->post('f_widget_cache_expire', 'intval');
 			$alias = $this->input->post('f_widget_alias', 'trim');
-			Widgets::model()->update(array(
+			WidgetsTable::model()->update(array(
 				'alias'=>$alias,
 				'description'=>$this->input->post('f_widget_description', 'trim'),
 				'enabled'=>$this->input->post('f_widget_enabled') ? 1 : 0,
@@ -105,18 +106,19 @@ class WidgetController extends AdminController{
 			if(method_exists($widget_obj, 'onPost')){
 				$widget_obj->onPost();
 			}
-			$widget = Widgets::model()->find($id);
+			$widget = WidgetsTable::model()->find($id);
 			\F::cache()->delete($alias);
 		}
 		
 		$this->view->widget = $widget;
 		if($widget['options']){
 			$this->view->widget_config = json_decode($widget['options'], true);
-			$this->form('widget')->setData($this->view->widget_config);
 		}else{
 			$this->view->widget_config = array();
 		}
 		
+		$widget_admin->initConfig(json_decode($widget['options'], true));
+		$this->form('widget')->setData($widget_admin->config, true);
 		$this->view->widget_admin = $widget_admin;
 		$this->layout->subtitle = '编辑小工具  - '.$this->view->widget_admin->title;
 
@@ -155,14 +157,14 @@ class WidgetController extends AdminController{
 	
 	public function createInstance(){
 		if($this->input->post()){
-			$widget_instance_id = Widgets::model()->insert(array(
+			$widget_instance_id = WidgetsTable::model()->insert(array(
 				'widget_name'=>$this->input->post('widget_name'),
 				'alias'=>$this->input->post('alias') ? $this->input->post('alias') : 'w' . uniqid(),
 				'description'=>$this->input->post('description'),
 				'widgetarea'=>$this->input->post('widgetarea', 'trim'),
 				'options'=>'',
 			));
-			$this->actionlog(Actionlogs::TYPE_WIDGET, '创建了一个小工具实例', $widget_instance_id);
+			$this->actionlog(ActionlogsTable::TYPE_WIDGET, '创建了一个小工具实例', $widget_instance_id);
 			
 			Response::notify('success', '小工具实例创建成功', array('admin/widget/edit', array(
 				'id'=>$widget_instance_id,
@@ -193,8 +195,8 @@ class WidgetController extends AdminController{
 	
 	public function removeInstance(){
 		$id = $this->input->get('id', 'intval');
-		Widgets::model()->delete($id);
-		$this->actionlog(Actionlogs::TYPE_WIDGET, '删除了一个小工具实例', $id);
+		WidgetsTable::model()->delete($id);
+		$this->actionlog(ActionlogsTable::TYPE_WIDGET, '删除了一个小工具实例', $id);
 
 		Response::notify('success', array(
 			'message'=>'一个小工具实例被删除',
@@ -202,7 +204,7 @@ class WidgetController extends AdminController{
 	}
 	
 	public function isAliasNotExist(){
-		if(Widgets::model()->fetchRow(array(
+		if(WidgetsTable::model()->fetchRow(array(
 			'alias = ?'=>$this->input->request('alias', 'trim'),
 			'id != ?'=>$this->input->request('id', 'intval', false)
 		))){
@@ -214,12 +216,12 @@ class WidgetController extends AdminController{
 	
 	public function copy(){
 		$id = $this->input->get('id', 'intval');
-		$widget = Widgets::model()->find($id);
+		$widget = WidgetsTable::model()->find($id);
 		if(!$widget){
 			throw new HttpException('指定小工具ID不存在');
 		}
 		
-		$widget_id = Widgets::model()->insert(array(
+		$widget_id = WidgetsTable::model()->insert(array(
 			'alias'=>'w' . uniqid(),
 			'options'=>$widget['options'],
 			'widget_name'=>$widget['widget_name'],
@@ -231,7 +233,7 @@ class WidgetController extends AdminController{
 			'cache'=>$widget['cache'],
 		));
 		
-		$this->actionlog(Actionlogs::TYPE_WIDGET, '复制了小工具实例' . $id, $widget_id);
+		$this->actionlog(ActionlogsTable::TYPE_WIDGET, '复制了小工具实例' . $id, $widget_id);
 		
 		Response::notify('success', array(
 			'message'=>'一个小工具实例被复制',

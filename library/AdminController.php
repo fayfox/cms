@@ -3,17 +3,17 @@ namespace cms\library;
 
 use fay\core\Controller;
 use fay\core\Uri;
-use fay\helpers\Request;
-use fay\models\tables\Actionlogs;
-use fay\services\Setting;
-use fay\models\Setting as SettingModel;
+use fay\helpers\RequestHelper;
+use fay\models\forms\SettingForm;
+use fay\models\tables\ActionlogsTable;
+use fay\services\SettingService;
 use fay\core\Response;
-use fay\services\Menu;
+use fay\services\MenuService;
 use fay\core\HttpException;
-use fay\services\Flash;
-use fay\models\tables\Roles;
+use fay\services\FlashService;
+use fay\models\tables\RolesTable;
 use fay\helpers\ArrayHelper;
-use fay\services\User;
+use fay\services\UserService;
 
 class AdminController extends Controller{
 	public $layout_template = 'admin';
@@ -36,7 +36,7 @@ class AdminController extends Controller{
 			'label'=>'Tools',
 			'icon'=>'fa fa-wrench',
 			'router'=>'tools',
-			'roles'=>Roles::ITEM_SUPER_ADMIN,
+			'roles'=>RolesTable::ITEM_SUPER_ADMIN,
 		),
 	);
 	
@@ -49,7 +49,7 @@ class AdminController extends Controller{
 		$this->current_user = \F::session()->get('user.id', 0);
 		
 		//验证session中是否有值
-		if(!User::service()->isAdmin()){
+		if(!UserService::service()->isAdmin()){
 			Response::redirect('admin/login/index', array('redirect'=>base64_encode($this->view->url(Uri::getInstance()->router, $this->input->get()))));
 		}
 		$this->layout->current_directory = '';
@@ -61,7 +61,7 @@ class AdminController extends Controller{
 		}
 		
 		if(!$this->input->isAjaxRequest()){
-			$this->_left_menu = Menu::service()->getTree('_admin_main');
+			$this->_left_menu = MenuService::service()->getTree('_admin_main');
 		}
 	}
 	
@@ -69,7 +69,7 @@ class AdminController extends Controller{
 	 * 表单验证出错后的报错渲染
 	 * @param array $check
 	 * @param bool $return
-	 * @return string|null
+	 * @return string
 	 */
 	public function showDataCheckError($check, $return = false){
 		$html = '';
@@ -79,7 +79,8 @@ class AdminController extends Controller{
 		if($return){
 			return $html;
 		}else{
-			Flash::set($html);
+			FlashService::set($html);
+			return '';
 		}
 	}
 	
@@ -97,7 +98,7 @@ class AdminController extends Controller{
 			throw new HttpException($errors[0]['message'], 404);
 		}else{
 			foreach($errors as $e){
-				Flash::set($e['message']);
+				FlashService::set($e['message']);
 			}
 		}
 	}
@@ -109,10 +110,10 @@ class AdminController extends Controller{
 	 * @param int $refer 引用，例如操作为“编辑文章”则该字段为文章id
 	 */
 	public function actionlog($type, $note, $refer = 0){
-		Actionlogs::model()->insert(array(
+		ActionlogsTable::model()->insert(array(
 			'user_id'=>$this->current_user,
 			'create_time'=>$this->current_time,
-			'ip_int'=>Request::ip2int($this->ip),
+			'ip_int'=>RequestHelper::ip2int($this->ip),
 			'type'=>$type,
 			'note'=>$note,
 			'refer'=>is_array($refer) ? implode(',', $refer) : $refer,
@@ -121,6 +122,8 @@ class AdminController extends Controller{
 	
 	/**
 	 * 添加一个菜单组，一次只能添加一组
+	 * @param $menu
+	 * @param null $offset
 	 */
 	public function addMenuTeam($menu, $offset = null){
 		if($offset === null){
@@ -147,6 +150,8 @@ class AdminController extends Controller{
 	/**
 	 * 根据directory删除一组菜单，若指定index，则只删除指定的某个菜单项。
 	 * index从0开始
+	 * @param $directory
+	 * @param null $index
 	 */
 	public function removeMenuTeam($directory, $index = null){
 		foreach($this->_left_menu as $k => &$menu){
@@ -163,6 +168,8 @@ class AdminController extends Controller{
 	
 	/**
 	 * 添加一个顶部菜单
+	 * @param $menu
+	 * @param null $offset
 	 */
 	public function addTopNav($menu, $offset = null){
 		if($offset === null){
@@ -195,7 +202,7 @@ class AdminController extends Controller{
 	protected function getEnabledBoxes($settings = null){
 		$settings === null && $settings = $this->view->_setting_key;
 		if(!is_array($settings)){
-			$settings = Setting::service()->get($settings);
+			$settings = SettingService::service()->get($settings);
 		}
 		if(!empty($settings['boxes'])){
 			return array_intersect($this->getBoxNames(), isset($settings['boxes']) ? $settings['boxes'] : array());
@@ -206,6 +213,8 @@ class AdminController extends Controller{
 	
 	/**
 	 * 添加一个box
+	 * @param $box
+	 * @param null $offset
 	 */
 	public function addBox($box, $offset = null){
 		if($offset === null){
@@ -218,6 +227,7 @@ class AdminController extends Controller{
 	
 	/**
 	 * 根据box name删除一个box
+	 * @param $name
 	 */
 	public function removeBox($name){
 		if(isset($this->boxes) && is_array($this->boxes)){
@@ -242,11 +252,11 @@ class AdminController extends Controller{
 	public function settingForm($key, $panel, $default = array(), $data = array()){
 		$this->layout->_setting_panel = $panel;
 		
-		$settings = Setting::service()->get($key);
+		$settings = SettingService::service()->get($key);
 		$settings || $settings = $default;
 		
 		$this->form('setting')
-			->setModel(SettingModel::model())
+			->setModel(SettingForm::model())
 			->setJsModel('setting')
 			->setData($settings)
 			->setData(array(

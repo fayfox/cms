@@ -3,18 +3,18 @@ namespace cms\modules\admin\controllers;
 
 use cms\library\AdminController;
 use fay\core\Sql;
-use fay\models\tables\Users;
-use fay\models\tables\Roles;
+use fay\models\tables\UsersTable;
+use fay\models\tables\RolesTable;
 use fay\common\ListView;
-use fay\services\user\Prop;
-use fay\services\User as User;
-use fay\models\tables\Actionlogs;
+use fay\services\user\UserPropService;
+use fay\services\UserService;
+use fay\models\tables\ActionlogsTable;
 use fay\core\Response;
-use fay\helpers\Html;
+use fay\helpers\HtmlHelper;
 use fay\core\HttpException;
 use fay\core\Loader;
-use fay\models\tables\UserProfile;
-use fay\services\user\Role;
+use fay\models\tables\UserProfileTable;
+use fay\services\user\UserRoleService;
 
 class UserController extends AdminController{
 	public function __construct(){
@@ -24,11 +24,11 @@ class UserController extends AdminController{
 	
 	public function index(){
 		//搜索条件验证，异常数据直接返回404
-		$this->form()->setScene('final')->setRules(array(
+		$this->form('search')->setScene('final')->setRules(array(
 			array('orderby', 'range', array(
 				'range'=>array_merge(
-					Users::model()->getFields(),
-					UserProfile::model()->getFields()
+					UsersTable::model()->getFields(),
+					UserProfileTable::model()->getFields()
 				),
 			)),
 			array('order', 'range', array(
@@ -36,8 +36,8 @@ class UserController extends AdminController{
 			)),
 			array('keywords_field', 'range', array(
 				'range'=>array_merge(
-					Users::model()->getFields(),
-					UserProfile::model()->getFields()
+					UsersTable::model()->getFields(),
+					UserProfileTable::model()->getFields()
 				),
 			)),
 		))->check();
@@ -102,7 +102,7 @@ class UserController extends AdminController{
 			$sql->order('u.id DESC');
 		}
 		
-		$this->view->roles = Roles::model()->fetchAll(array(
+		$this->view->roles = RolesTable::model()->fetchAll(array(
 			'deleted = 0',
 			'admin = 0',
 		), 'id,title');
@@ -123,15 +123,15 @@ class UserController extends AdminController{
 		$this->layout->subtitle = '添加用户';
 		
 		$this->form()->setScene('create')
-			->setModel(Users::model())
-			->setModel(UserProfile::model())
+			->setModel(UsersTable::model())
+			->setModel(UserProfileTable::model())
 			->setRules(array(
 				array(array('username', 'password'), 'required'),
 				array('roles', 'int'),
 			));
 		if($this->input->post() && $this->form()->check()){
-			$data = Users::model()->fillData($this->input->post());
-			isset($data['status']) || $data['status'] = Users::STATUS_VERIFIED;
+			$data = UsersTable::model()->fillData($this->input->post());
+			isset($data['status']) || $data['status'] = UsersTable::STATUS_VERIFIED;
 			
 			$extra = array(
 				'profile'=>array(
@@ -141,18 +141,18 @@ class UserController extends AdminController{
 				'props'=>$this->input->post('props', '', array()),
 			);
 			
-			$user_id = User::service()->create($data, $extra);
+			$user_id = UserService::service()->create($data, $extra);
 			
-			$this->actionlog(Actionlogs::TYPE_USERS, '添加了一个新用户', $user_id);
+			$this->actionlog(ActionlogsTable::TYPE_USERS, '添加了一个新用户', $user_id);
 			
-			Response::notify('success', '用户添加成功，'.Html::link('继续添加', array('admin/user/create', array(
+			Response::notify('success', '用户添加成功，'.HtmlHelper::link('继续添加', array('admin/user/create', array(
 				'roles'=>$this->input->post('roles', 'intval', array()),
 			))), array('admin/user/edit', array(
 				'id'=>$user_id,
 			)));
 		}
 		
-		$this->view->roles = Roles::model()->fetchAll(array(
+		$this->view->roles = RolesTable::model()->fetchAll(array(
 			'admin = 0',
 			'deleted = 0',
 		), 'id,title');
@@ -166,43 +166,43 @@ class UserController extends AdminController{
 		
 		$user_id = $this->input->get('id', 'intval');
 		$this->form()->setScene('edit')
-			->setModel(Users::model());
+			->setModel(UsersTable::model());
 		
 		if($this->input->post() && $this->form()->check()){
-			$data = Users::model()->fillData($this->form()->getAllData(false));
+			$data = UsersTable::model()->fillData($this->form()->getAllData(false));
 			
 			$extra = array(
 				'roles'=>$this->input->post('roles', 'intval', array()),
 				'props'=>$this->input->post('props', '', array()),
 			);
 			
-			User::service()->update($user_id, $data, $extra);
+			UserService::service()->update($user_id, $data, $extra);
 			
-			$this->actionlog(Actionlogs::TYPE_USERS, '修改个人信息', $user_id);
+			$this->actionlog(ActionlogsTable::TYPE_USERS, '修改个人信息', $user_id);
 			Response::notify('success', '编辑成功', false);
 			
 			//置空密码字段
 			$this->form()->setData(array('password'=>''), true);
 		}
 		
-		$user = User::service()->get($user_id, 'user.*,profile.*');
-		$user_role_ids = Role::service()->getIds($user_id);
+		$user = UserService::service()->get($user_id, 'user.*,profile.*');
+		$user_role_ids = UserRoleService::service()->getIds($user_id);
 		$this->view->user = $user;
 		$this->form()->setData($user['user'])
 			->setData(array('roles'=>$user_role_ids));
 		
-		$this->view->roles = Roles::model()->fetchAll(array(
+		$this->view->roles = RolesTable::model()->fetchAll(array(
 			'admin = 0',
 			'deleted = 0',
 		), 'id,title');
 		
-		$this->view->prop_set = Prop::service()->getPropertySet($user_id);
+		$this->view->prop_set = UserPropService::service()->getPropertySet($user_id);
 		$this->view->render();
 	}
 	
 	public function item(){
 		if($id = $this->input->get('id', 'intval')){
-			$this->view->user = User::service()->get($id, 'user.*,props.*,roles.title,profile.*');
+			$this->view->user = UserService::service()->get($id, 'user.*,props.*,roles.title,profile.*');
 		}else{
 			throw new HttpException('参数不完整', 500);
 		}
@@ -227,17 +227,19 @@ class UserController extends AdminController{
 		$user_id = $this->input->get('user_id', 'intval');
 		
 		if($role_ids){
-			$props = Prop::service()->getByRefer($role_ids);
+			$props = UserPropService::service()->getByRefer($role_ids);
 		}else{
 			$props = array();
 		}
 		
 		if(!empty($props) && $user_id){
-			$props = Prop::service()->getPropertySet($user_id, $props);
+			$prop_set = UserPropService::service()->getPropertySet($user_id, $props);
+		}else{
+			$prop_set = $props;
 		}
 		
-		$this->view->prop_set = $props;
-		
-		$this->view->renderPartial('prop/_edit');
+		$this->view->renderPartial('prop/_edit', array(
+			'prop_set'=>$prop_set,
+		));
 	}
 }

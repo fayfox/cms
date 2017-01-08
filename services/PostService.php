@@ -1,17 +1,16 @@
 <?php
-namespace cms\models;
+namespace cms\services;
 
-use fay\core\Model;
-use fay\models\tables\Posts;
+use fay\core\Service;
+use fay\models\tables\PostsTable;
 
-class Post extends Model{
-
+class PostService extends Service{
 	/**
 	 * @param string $class_name
-	 * @return Post
+	 * @return PostService
 	 */
-	public static function model($class_name = __CLASS__){
-		return parent::model($class_name);
+	public static function service($class_name = __CLASS__){
+		return parent::service($class_name);
 	}
 	
 	/**
@@ -24,7 +23,7 @@ class Post extends Model{
 		if($status !== null){
 			$conditions['status = ?'] = $status;
 		}
-		$result = Posts::model()->fetchRow($conditions, 'COUNT(*)');
+		$result = PostsTable::model()->fetchRow($conditions, 'COUNT(*)');
 		return $result['COUNT(*)'];
 	}
 	
@@ -33,7 +32,7 @@ class Post extends Model{
 	 * @return string
 	 */
 	public function getDeletedCount(){
-		$result = Posts::model()->fetchRow('deleted = 1', 'COUNT(*)');
+		$result = PostsTable::model()->fetchRow('deleted = 1', 'COUNT(*)');
 		return $result['COUNT(*)'];
 	}
 }

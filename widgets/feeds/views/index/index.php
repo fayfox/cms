@@ -1,6 +1,6 @@
 <?php
-use fay\helpers\Date;
-use fay\models\tables\Logs;
+use fay\helpers\DateHelper;
+use fay\models\tables\LogsTable;
 ?>
 <style>
 .feeds li{background-color:#fafafa;margin-bottom:7px;line-height:28px;height:28px;}
@@ -26,14 +26,14 @@ use fay\models\tables\Logs;
 						<?php foreach($logs as $l){?>
 							<li>
 								<i class="<?php switch($l['type']){
-									case Logs::TYPE_ERROR:
+									case LogsTable::TYPE_ERROR:
 										echo 'fa fa-bolt bg-red';
 									break;
-									case Logs::TYPE_WARMING:
+									case LogsTable::TYPE_WARMING:
 										echo 'fa fa-bell-o bg-yellow';
 									break;
 								}?>"></i>
-								<span class="fr date" title="<?php echo Date::format($l['create_time'])?>"><?php echo Date::niceShort($l['create_time'])?></span>
+								<span class="fr date" title="<?php echo DateHelper::format($l['create_time'])?>"><?php echo DateHelper::niceShort($l['create_time'])?></span>
 								<span class="desc"><?php echo $l['code']?></span>
 							</li>
 						<?php }?>

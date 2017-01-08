@@ -3,8 +3,8 @@ namespace cms\modules\api\controllers;
 
 use cms\library\ApiController;
 use fay\core\Response;
-use fay\services\Tag;
-use fay\models\tables\TagCounter;
+use fay\services\TagService;
+use fay\models\tables\TagCounterTable;
 
 /**
  * 标签
@@ -20,7 +20,7 @@ class TagController extends ApiController{
 	public function listAction(){
 		//表单验证
 		$this->form()->setRules(array(
-			array('type', 'range', array('range'=>TagCounter::model()->getFields(array('tag_id')))),
+			array('type', 'range', array('range'=>TagCounterTable::model()->getFields(array('tag_id')))),
 			array(array('page', 'page_size'), 'int', array('min'=>1)),
 		))->setFilters(array(
 			'type'=>'trim',
@@ -49,7 +49,7 @@ class TagController extends ApiController{
 				$order = "tc.{$type} DESC";
 		}
 		
-		Response::json(Tag::service()->getList(
+		Response::json(TagService::service()->getList(
 			$order,
 			$this->form()->getData('page_size', 20),
 			$this->form()->getData('page', 1)
@@ -82,7 +82,7 @@ class TagController extends ApiController{
 				'id != ?'=>$id,
 			);
 		}
-		if(Tag::isTagExist($this->form()->getData('tag'), $conditions)){
+		if(TagService::isTagExist($this->form()->getData('tag'), $conditions)){
 			Response::json('', 0, '标签已存在');
 		}else{
 			Response::json();
@@ -104,7 +104,7 @@ class TagController extends ApiController{
 			'tag'=>'标签',
 		))->check();
 		
-		if(Tag::isTagExist($this->form()->getData('tag'))){
+		if(TagService::isTagExist($this->form()->getData('tag'))){
 			Response::json();
 		}else{
 			Response::json('', 0, '标签不存在');

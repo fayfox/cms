@@ -1,10 +1,10 @@
 <?php 
-use fay\helpers\Html;
-use fay\services\Option;
-use fay\services\File;
-use fay\services\Flash;
-use fay\services\user\Role;
-use fay\services\User;
+use fay\helpers\HtmlHelper;
+use fay\services\OptionService;
+use fay\services\FileService;
+use fay\services\FlashService;
+use fay\services\user\UserRoleService;
+use fay\services\UserService;
 ?>
 <!DOCTYPE html>
 <html>
@@ -32,7 +32,7 @@ system.assets_url = '<?php echo \F::config()->get('assets_url')?>';
 system.user_id = <?php echo \F::app()->current_user?>;
 common.max_upload_file_size = '<?php echo \F::config()->get('upload.max_size')?>b';
 </script>
-<title><?php echo $subtitle?> | <?php echo Option::get('site:sitename')?>后台</title>
+<title><?php echo $subtitle?> | <?php echo OptionService::get('site:sitename')?>后台</title>
 </head>
 <body id="faycms">
 <div class="wrapper">
@@ -42,7 +42,7 @@ common.max_upload_file_size = '<?php echo \F::config()->get('upload.max_size')?>
 			<ul class="user-info-menu fl">
 				<li><a href="javascript:;" class="toggle-sidebar"><i class="fa fa-bars"></i></a></li>
 				<?php
-					$user_roles = Role::service()->getIds();
+					$user_roles = UserRoleService::service()->getIds();
 					foreach(F::app()->_top_nav as $nav){
 						if(isset($nav['roles'])){
 							is_array($nav['roles']) || $nav['roles'] = array($nav['roles']);
@@ -50,7 +50,7 @@ common.max_upload_file_size = '<?php echo \F::config()->get('upload.max_size')?>
 								continue;
 							}
 						}
-						echo Html::link('', array($nav['router']), array(
+						echo HtmlHelper::link('', array($nav['router']), array(
 							'target'=>isset($nav['target']) ? $nav['target'] : false,
 							'title'=>$nav['label'],
 							'prepend'=>'<i class="'.$nav['icon'].'"></i>',
@@ -65,7 +65,7 @@ common.max_upload_file_size = '<?php echo \F::config()->get('upload.max_size')?>
 			<ul class="user-info-menu fr">
 			<?php if(\F::app()->current_user){?>
 				<li class="dropdown-container hover-line message" id="faycms-message">
-					<?php echo Html::link('', '#faycms-messages-container', array(
+					<?php echo HtmlHelper::link('', '#faycms-messages-container', array(
 						'class'=>'dropdown',
 						'prepend'=>array(
 							'tag'=>'i',
@@ -87,16 +87,16 @@ common.max_upload_file_size = '<?php echo \F::config()->get('upload.max_size')?>
 							</ul>
 						</li>
 						<li class="last"><?php
-							echo Html::link('查看全部', array('admin/notification/my'), array(
+							echo HtmlHelper::link('查看全部', array('admin/notification/my'), array(
 								'target'=>'_blank',
 							));
 						?></li>
 					</ul>
 				</li>
 				<li class="dropdown-container user-profile">
-					<?php $user = User::service()->get(\F::app()->current_user, 'avatar,username')?>
+					<?php $user = UserService::service()->get(\F::app()->current_user, 'avatar,username')?>
 					<a href="#user-profile-menu" class="dropdown"><?php 
-						echo Html::img($user['user']['avatar']['thumbnail'], File::PIC_THUMBNAIL, array(
+						echo HtmlHelper::img($user['user']['avatar']['thumbnail'], FileService::PIC_THUMBNAIL, array(
 							'class'=>'circle',
 							'width'=>28,
 							'spare'=>'avatar',
@@ -104,7 +104,7 @@ common.max_upload_file_size = '<?php echo \F::config()->get('upload.max_size')?>
 					?><span>您好，<?php echo $user['user']['username']?><i class="fa fa-angle-down"></i></span></a>
 					<ul class="dropdown-menu" id="user-profile-menu">
 						<li><?php
-							echo Html::link('我的个人信息', array('admin/profile/index'), array(
+							echo HtmlHelper::link('我的个人信息', array('admin/profile/index'), array(
 								'prepend'=>array(
 									'tag'=>'i',
 									'class'=>'fa fa-user',
@@ -113,7 +113,7 @@ common.max_upload_file_size = '<?php echo \F::config()->get('upload.max_size')?>
 							));
 						?></li>
 						<li class="last"><?php
-							echo Html::link('退出', array('admin/login/logout'), array(
+							echo HtmlHelper::link('退出', array('admin/login/logout'), array(
 								'prepend'=>array(
 									'tag'=>'i',
 									'class'=>'fa fa-lock',
@@ -138,34 +138,34 @@ common.max_upload_file_size = '<?php echo \F::config()->get('upload.max_size')?>
 						}else{
 							$html_options['class'] = 'quick-link';
 						}
-						echo Html::link($sublink['text'], $sublink['uri'], $html_options, true);
+						echo HtmlHelper::link($sublink['text'], $sublink['uri'], $html_options, true);
 					}?></h1>
 			</div>
 			<div class="operate-env">
 				<div class="screen-meta-links"><?php
 					//帮助面板
 					if(isset($_help_panel)){
-						echo Html::link('', '#faycms-help-content', array(
+						echo HtmlHelper::link('', '#faycms-help-content', array(
 							'class'=>'fa fa-question-circle fa-2x faycms-help-link',
 							'title'=>'帮助',
 						));
-						echo Html::tag('div', array(
+						echo HtmlHelper::tag('div', array(
 							'id'=>'faycms-help-content',
 							'class'=>'dialog-content',
 							'wrapper'=>array(
 								'tag'=>'div',
 								'class'=>'dialog hide',
 							),
-							'prepend'=>'<h4>设置</h4>',
-						), $this->renderPartial($_help_panel, array(), -1, true));
+							'prepend'=>'<h4>帮助</h4>',
+						), $this->renderPartial($_help_panel, $this->getViewData(), -1, true));
 					}
-					//帮助文本，用于插件等不方便直接利用view文件构建帮助弹出的常见
+					//帮助文本，用于插件等不方便直接利用view文件构建帮助弹出的场景
 					if(isset($_help_content)){
-						echo Html::link('', '#faycms-help-content', array(
+						echo HtmlHelper::link('', '#faycms-help-content', array(
 							'class'=>'fa fa-question-circle fa-2x faycms-help-link',
 							'title'=>'帮助',
 						));
-						echo Html::tag('div', array(
+						echo HtmlHelper::tag('div', array(
 							'id'=>'faycms-help-content',
 							'class'=>'dialog-content',
 							'wrapper'=>array(
@@ -177,11 +177,11 @@ common.max_upload_file_size = '<?php echo \F::config()->get('upload.max_size')?>
 					}
 					//页面设置
 					if(isset($_setting_panel)){
-						echo Html::link('', '#faycms-setting-content', array(
+						echo HtmlHelper::link('', '#faycms-setting-content', array(
 							'class'=>'fa fa-cog fa-2x faycms-setting-link',
 							'title'=>'设置',
 						));
-						echo Html::tag('div', array(
+						echo HtmlHelper::tag('div', array(
 							'id'=>'faycms-setting-content',
 							'class'=>'dialog-content',
 							'wrapper'=>array(
@@ -189,11 +189,11 @@ common.max_upload_file_size = '<?php echo \F::config()->get('upload.max_size')?>
 								'class'=>'dialog hide',
 							),
 							'prepend'=>'<h4>设置</h4>',
-						), $this->renderPartial($_setting_panel, array(), -1, true));
+						), $this->renderPartial($_setting_panel, $this->getViewData(), -1, true));
 					}?></div>
 			</div>
 		</div>
-		<?php echo Flash::get();?>
+		<?php echo FlashService::get();?>
 		<?php echo $content?>
 	</div>
 </div>

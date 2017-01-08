@@ -1,5 +1,10 @@
 <?php
-use fay\helpers\Html;
+use fay\helpers\HtmlHelper;
+
+/**
+ * @var $cats array
+ * @var $root int 
+ */
 
 function showCats($cats, $dep = 0){?>
 	<ul class="tree">
@@ -8,31 +13,31 @@ function showCats($cats, $dep = 0){?>
 			<div class="leaf">
 				<span class="fr options">
 					<span class="w115 block fl">
-					排序：<?php echo Html::inputText('sort[]', $c['sort'], array(
+					排序：<?php echo HtmlHelper::inputText('sort[]', $c['sort'], array(
 						'size'=>3,
 						'maxlength'=>3,
 						'data-id'=>$c['id'],
 						'class'=>"form-control w50 edit-sort cat-{$c['id']}-sort",
 					))?>
 					</span>
-					<?php echo Html::link('查看该分类', array('admin/page/index', array(
+					<?php echo HtmlHelper::link('查看该分类', array('admin/page/index', array(
 						'cat_id'=>$c['id'],
 					)), array(), true);
 					if(F::app()->checkPermission('admin/page/cat-create')){
-						echo Html::link('添加子节点', '#create-cat-dialog', array(
+						echo HtmlHelper::link('添加子节点', '#create-cat-dialog', array(
 							'class'=>'create-cat-link',
-							'data-title'=>Html::encode($c['title']),
+							'data-title'=>HtmlHelper::encode($c['title']),
 							'data-id'=>$c['id'],
 						));
 					}
 					if(F::app()->checkPermission('admin/page/cat-edit')){
-						echo Html::link('编辑', '#edit-cat-dialog', array(
+						echo HtmlHelper::link('编辑', '#edit-cat-dialog', array(
 							'class'=>'edit-cat-link',
 							'data-id'=>$c['id'],
 						));
 					}
 					if(F::app()->checkPermission('admin/page/cat-remove')){
-						echo Html::link('删除', array('admin/category/remove', array(
+						echo HtmlHelper::link('删除', array('admin/category/remove', array(
 							'id'=>$c['id'],
 						)), array(
 							'class'=>'remove-link fc-red',
@@ -44,14 +49,14 @@ function showCats($cats, $dep = 0){?>
 					else
 						echo 'parent';?>">
 					<?php if(empty($c['children'])){?>
-						<?php echo Html::encode($c['title'])?>
+						<?php echo HtmlHelper::encode($c['title'])?>
 					<?php }else{?>
-						<strong><?php echo Html::encode($c['title'])?></strong>
+						<strong><?php echo HtmlHelper::encode($c['title'])?></strong>
 					<?php }?>
 					<?php if($c['alias']){?>
 						<em class="fc-grey">[ <?php echo $c['alias']?> ]</em>
 					<?php }?>
-					<?php echo Html::link('添加页面', array('admin/page/create', array(
+					<?php echo HtmlHelper::link('添加页面', array('admin/page/create', array(
 						'page_category'=>$c['id'],
 					)), array(
 						'class'=>'fc-green hover-link',
@@ -74,4 +79,7 @@ function showCats($cats, $dep = 0){?>
 	</div>
 </div>
 
-<?php $this->renderPartial('category/_common');?>
+<?php $this->renderPartial('category/_common', array(
+	'root'=>$root,
+	'cats'=>$cats,
+));?>

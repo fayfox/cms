@@ -2,26 +2,25 @@
 namespace cms\modules\admin\controllers;
 
 use cms\library\AdminController;
-use fay\helpers\Request;
-use fay\services\Category;
-use fay\services\post\Prop;
-use fay\models\tables\Posts;
-use fay\models\tables\PostsCategories;
-use fay\models\tables\PostsFiles;
-use fay\models\tables\Actionlogs;
-use fay\services\Setting;
+use fay\helpers\RequestHelper;
+use fay\services\CategoryService;
+use fay\services\post\PostPropService;
+use fay\models\tables\PostsTable;
+use fay\models\tables\PostsCategoriesTable;
+use fay\models\tables\PostsFilesTable;
+use fay\models\tables\ActionlogsTable;
+use fay\services\SettingService;
 use fay\core\Sql;
 use fay\common\ListView;
 use fay\services\Post;
 use fay\core\Response;
-use fay\helpers\Html;
-use fay\core\Hook;
+use fay\helpers\HtmlHelper;
 use fay\core\HttpException;
-use fay\services\Option;
-use fay\services\Flash;
-use fay\models\tables\PostMeta;
-use fay\services\Post as PostService;
-use fay\models\tables\PostExtra;
+use fay\services\OptionService;
+use fay\services\FlashService;
+use fay\models\tables\PostMetaTable;
+use fay\services\PostService;
+use fay\models\tables\PostExtraTable;
 
 class PostController extends AdminController{
 	/**
@@ -68,21 +67,21 @@ class PostController extends AdminController{
 	public function __construct(){
 		parent::__construct();
 		$this->layout->current_directory = 'post';
-		$this->post_review = !!(Option::get('system:post_review'));
-		$this->role_cats = !!(Option::get('system:post_role_cats'));
+		$this->post_review = !!(OptionService::get('system:post_review'));
+		$this->role_cats = !!(OptionService::get('system:post_role_cats'));
 	}
 	
 	public function create(){
 		$cat_id = $this->input->get('cat_id', 'intval');
-		$cat_id || $cat_id = Category::service()->getIdByAlias('_system_post');
-		$cat = Category::service()->get($cat_id, 'title,left_value,right_value');
+		$cat_id || $cat_id = CategoryService::service()->getIdByAlias('_system_post');
+		$cat = CategoryService::service()->get($cat_id, 'title,left_value,right_value');
 		
 		if(!$cat){
 			throw new HttpException('所选分类不存在');
 		}
 		
-		//hook
-		Hook::getInstance()->call('admin_before_post_create', array(
+		//触发事件（可以定制一些box以扩展文章功能）
+		\F::event()->trigger('admin_before_post_create', array(
 			'cat_id'=>$cat_id,
 		));
 		
@@ -90,12 +89,12 @@ class PostController extends AdminController{
 		$_setting_key = 'admin_post_boxes';
 		$enabled_boxes = $this->getEnabledBoxes($_setting_key);
 		
-		$this->form()->setModel(Posts::model())
-			->setModel(PostsFiles::model())
-			->setModel(PostMeta::model());
+		$this->form()->setModel(PostsTable::model())
+			->setModel(PostsFilesTable::model())
+			->setModel(PostMetaTable::model());
 		if($this->input->post() && $this->form()->check()){
 			//添加posts表
-			$data = Posts::model()->fillData($this->input->post());
+			$data = PostsTable::model()->fillData($this->input->post());
 			isset($data['cat_id']) || $data['cat_id'] = $cat_id;
 			
 			//发布时间特殊处理
@@ -111,23 +110,23 @@ class PostController extends AdminController{
 			
 			$extra = array(
 				'extra'=>array(
-					'ip_int'=>Request::ip2int($this->ip),
+					'ip_int'=>RequestHelper::ip2int($this->ip),
 				)
 			);
 			
 			//Markdown语法特殊处理
-			if($data['content_type'] == Posts::CONTENT_TYPE_MARKDOWN){
+			if($data['content_type'] == PostsTable::CONTENT_TYPE_MARKDOWN){
 				$extra['extra']['markdown'] = $data['content'];
 				$data['content'] = $this->input->post('markdown-container-html-code');
 			}
 			
 			//Meta信息
-			if($post_meta = PostMeta::model()->fillData($this->input->post())){
+			if($post_meta = PostMetaTable::model()->fillData($this->input->post())){
 				$extra['meta'] = $post_meta;
 			}
 			
 			//扩展信息
-			if($post_extra = PostExtra::model()->fillData($this->input->post())){
+			if($post_extra = PostExtraTable::model()->fillData($this->input->post())){
 				$extra['extra'] = array_merge($post_extra, $extra['extra']);
 			}
 			
@@ -154,21 +153,21 @@ class PostController extends AdminController{
 			
 			$post_id = PostService::service()->create($data, $extra, $this->current_user);
 			
-			$this->actionlog(Actionlogs::TYPE_POST, '添加文章', $post_id);
+			$this->actionlog(ActionlogsTable::TYPE_POST, '添加文章', $post_id);
 			Response::notify('success', '文章发布成功', array('admin/post/edit', array(
 				'id'=>$post_id,
 			)));
 		}
 		
 		//设置附加属性
-		$this->view->prop_set = Prop::service()->getPropsByCat($cat_id);
+		$this->view->prop_set = PostPropService::service()->getPropsByCat($cat_id);
 		
 		$this->form()->setData(array(
 			'cat_id'=>$cat_id,
 		));
 		
 		//box排序
-		$_box_sort_settings = Setting::service()->get('admin_post_box_sort');
+		$_box_sort_settings = SettingService::service()->get('admin_post_box_sort');
 		$_box_sort_settings || $_box_sort_settings = $this->default_box_sort;
 		$this->view->_box_sort_settings = $_box_sort_settings;
 		
@@ -179,7 +178,7 @@ class PostController extends AdminController{
 		));
 		
 		//所有文章分类
-		$this->view->cats = Category::service()->getTree('_system_post');
+		$this->view->cats = CategoryService::service()->getTree('_system_post');
 		
 		//标题
 		if(in_array('main_category', $enabled_boxes)){
@@ -203,11 +202,11 @@ class PostController extends AdminController{
 	
 	public function index(){
 		//搜索条件验证，异常数据直接返回404
-		$this->form()->setScene('final')->setRules(array(
+		$this->form('search')->setScene('final')->setRules(array(
 			array('status', 'range', array(
 				'range'=>array(
-					Posts::STATUS_PUBLISHED, Posts::STATUS_DRAFT,
-					Posts::STATUS_REVIEWED, Posts::STATUS_PENDING
+					PostsTable::STATUS_PUBLISHED, PostsTable::STATUS_DRAFT,
+					PostsTable::STATUS_REVIEWED, PostsTable::STATUS_PENDING
 				),
 			)),
 			array('deleted', 'range', array(
@@ -218,13 +217,13 @@ class PostController extends AdminController{
 			)),
 			array(array('start_time', 'end_time'), 'datetime'),
 			array('orderby', 'range', array(
-				'range'=>Posts::model()->getFields(),
+				'range'=>PostsTable::model()->getFields(),
 			)),
 			array('order', 'range', array(
 				'range'=>array('asc', 'desc'),
 			)),
 			array('keywords_field', 'range', array(
-				'range'=>Posts::model()->getFields(),
+				'range'=>PostsTable::model()->getFields(),
 			)),
 			array('cat_id', 'int', array('min'=>1))
 		))->check();
@@ -254,12 +253,12 @@ class PostController extends AdminController{
 		//列表页会根据enabled_boxes决定是否显示某些列
 		$this->view->enabled_boxes = $this->getEnabledBoxes('admin_post_boxes');
 		//查找文章分类
-		$this->view->cats = Category::service()->getTree('_system_post');
+		$this->view->cats = CategoryService::service()->getTree('_system_post');
 		
 		$sql = new Sql();
 		$count_sql = new Sql();//逻辑太复杂，靠通用逻辑从完整sql中替换出来的话，效率太低
-		$sql->from(array('p'=>'posts'), Posts::model()->formatFields('!content'))
-			->joinLeft(array('pm'=>'post_meta'), 'p.id = pm.post_id', PostMeta::model()->formatFields('!post_id'));
+		$sql->from(array('p'=>'posts'), PostsTable::model()->formatFields('!content'))
+			->joinLeft(array('pm'=>'post_meta'), 'p.id = pm.post_id', PostMetaTable::model()->formatFields('!post_id'));
 		$count_sql->from(array('p'=>'posts'), 'COUNT(*)');
 		
 		if(in_array('main_category', $_settings['cols'])){
@@ -274,7 +273,7 @@ class PostController extends AdminController{
 		if($cat_id){
 			if($this->input->get('with_child')){
 				//包含子分类搜索
-				$cats = Category::service()->getChildIds($cat_id);
+				$cats = CategoryService::service()->getChildIds($cat_id);
 				if($this->input->get('with_slave')){
 					$orWhere = array(
 						"p.cat_id = {$cat_id}",
@@ -399,44 +398,44 @@ class PostController extends AdminController{
 		}
 		
 		//原文章部分信息
-		$post = Posts::model()->find($post_id, 'cat_id,status');
+		$post = PostsTable::model()->find($post_id, 'cat_id,status');
 		if(!$post){
 			throw new HttpException('无效的文章ID');
 		}
 		
 		//编辑权限检查
-		if(!Post::checkEditPermission($post_id, $this->input->post('status', 'intval'), $this->input->post('cat_id'))){
+		if(!PostService::checkEditPermission($post_id, $this->input->post('status', 'intval'), $this->input->post('cat_id'))){
 			throw new HttpException('您无权限编辑该文章', 403, 'permission-denied');
 		}
 		
-		$cat = Category::service()->get($post['cat_id'], 'title,left_value,right_value');
+		$cat = CategoryService::service()->get($post['cat_id'], 'title,left_value,right_value');
 		
 		//若分类已被删除，将文章归为根分类
 		if(!$cat){
-			$cat = Category::service()->getByAlias('_system_post', 'id,title,left_value,right_value');
-			Posts::model()->update(array(
+			$cat = CategoryService::service()->getByAlias('_system_post', 'id,title,left_value,right_value');
+			PostsTable::model()->update(array(
 				'cat_id'=>$cat['id'],
 			), $post_id);
-			Flash::set('文章所属分类不存在，请重新设置文章分类', 'info');
+			FlashService::set('文章所属分类不存在，请重新设置文章分类', 'info');
 		}
 		
-		$this->form()->setModel(Posts::model())
-			->setModel(PostMeta::model())
-			->setModel(PostsFiles::model());
+		$this->form()->setModel(PostsTable::model())
+			->setModel(PostMetaTable::model())
+			->setModel(PostsFilesTable::model());
 		
 		if($this->input->post() && $this->form()->check()){
 			$status = $this->form()->getData('status');
 			
 			//未开启审核，文章却被设置为审核状态，强制修改为草稿（一般是之前开启了审核，后来关掉了）
-			if(!$this->post_review && ($status == Posts::STATUS_REVIEWED || $status == Posts::STATUS_PENDING)){
+			if(!$this->post_review && ($status == PostsTable::STATUS_REVIEWED || $status == PostsTable::STATUS_PENDING)){
 				$this->form()->setData(array(
-					'status'=>Posts::STATUS_DRAFT,
+					'status'=>PostsTable::STATUS_DRAFT,
 				), true);
-				Flash::set('文章状态异常，被强制修改为“草稿”', 'info');
+				FlashService::set('文章状态异常，被强制修改为“草稿”', 'info');
 			}
 			
 			//筛选出文章相关字段
-			$data = Posts::model()->fillData($this->input->post());
+			$data = PostsTable::model()->fillData($this->input->post());
 			//发布时间特殊处理
 			if(in_array('publish_time', $enabled_boxes)){
 				if(empty($data['publish_time'])){
@@ -451,18 +450,18 @@ class PostController extends AdminController{
 			$extra = array();
 			
 			//Markdown语法特殊处理
-			if($data['content_type'] == Posts::CONTENT_TYPE_MARKDOWN){
+			if($data['content_type'] == PostsTable::CONTENT_TYPE_MARKDOWN){
 				$extra['extra']['markdown'] = $data['content'];
 				$data['content'] = $this->input->post('markdown-container-html-code');
 			}
 			
 			//计数表
-			if($post_meta = PostMeta::model()->fillData($this->input->post())){
+			if($post_meta = PostMetaTable::model()->fillData($this->input->post())){
 				$extra['meta'] = $post_meta;
 			}
 			
 			//扩展信息
-			if($post_extra = PostExtra::model()->fillData($this->input->post())){
+			if($post_extra = PostExtraTable::model()->fillData($this->input->post())){
 				if(!empty($extra['extra'])){
 					$extra['extra'] = array_merge($post_extra, $extra['extra']);
 				}else{
@@ -497,25 +496,25 @@ class PostController extends AdminController{
 			
 			PostService::service()->update($post_id, $data, $extra);
 			
-			$this->actionlog(Actionlogs::TYPE_POST, '编辑文章', $post_id);
+			$this->actionlog(ActionlogsTable::TYPE_POST, '编辑文章', $post_id);
 			Response::notify('success', '一篇文章被编辑', false);
 		}
 		
 		$sql = new Sql();
-		$post = $sql->from(array('p'=>'posts'), Posts::model()->getFields())
-			->joinLeft(array('pm'=>'post_meta'), 'p.id = pm.post_id', PostMeta::model()->formatFields('!post_id'))
-			->joinLeft(array('pe'=>'post_extra'), 'p.id = pe.post_id', PostExtra::model()->formatFields('!post_id'))
+		$post = $sql->from(array('p'=>'posts'), PostsTable::model()->getFields())
+			->joinLeft(array('pm'=>'post_meta'), 'p.id = pm.post_id', PostMetaTable::model()->formatFields('!post_id'))
+			->joinLeft(array('pe'=>'post_extra'), 'p.id = pe.post_id', PostExtraTable::model()->formatFields('!post_id'))
 			->where('p.id = ?', $post_id)
 			->fetchRow()
 		;
 		
-		//hook
-		Hook::getInstance()->call('admin_before_post_update', array(
+		//触发事件（可以定制一些box以扩展文章功能）
+		\F::event()->trigger('admin_before_post_update', array(
 			'cat_id'=>$post['cat_id'],
 			'post_id'=>$post_id,
 		));
 		
-		$post['post_category'] = PostsCategories::model()->fetchCol('cat_id', array('post_id = ?'=>$post_id));
+		$post['post_category'] = PostsCategoriesTable::model()->fetchCol('cat_id', array('post_id = ?'=>$post_id));
 		$post['publish_time'] = date('Y-m-d H:i:s', $post['publish_time']);
 		
 		//文章对应标签
@@ -530,10 +529,10 @@ class PostController extends AdminController{
 		$this->form()->setData(array('tags'=>implode(',', $tags_arr)));
 		
 		//分类树
-		$this->view->cats = Category::service()->getTree('_system_post');
+		$this->view->cats = CategoryService::service()->getTree('_system_post');
 		
 		//post files
-		$this->view->files = PostsFiles::model()->fetchAll(array(
+		$this->view->files = PostsFilesTable::model()->fetchAll(array(
 			'post_id = ?'=>$post_id,
 		), 'file_id,description,is_image', 'sort');
 
@@ -541,9 +540,9 @@ class PostController extends AdminController{
 		$this->view->post = $post;
 		
 		//附加属性
-		$this->view->prop_set = Prop::service()->getPropertySet($post['id']);
+		$this->view->prop_set = PostPropService::service()->getPropertySet($post['id']);
 		
-		$cat = Category::service()->get($post['cat_id'], 'title');
+		$cat = CategoryService::service()->get($post['cat_id'], 'title');
 		$this->layout->subtitle = '编辑文章- 所属分类：'.$cat['title'];
 		if($this->checkPermission('admin/post/create')){
 			$this->layout->sublink = array(
@@ -555,7 +554,7 @@ class PostController extends AdminController{
 		}
 		
 		//box排序
-		$_box_sort_settings = Setting::service()->get('admin_post_box_sort');
+		$_box_sort_settings = SettingService::service()->get('admin_post_box_sort');
 		$_box_sort_settings || $_box_sort_settings = $this->default_box_sort;
 		$this->view->_box_sort_settings = $_box_sort_settings;
 		
@@ -576,10 +575,10 @@ class PostController extends AdminController{
 		
 		PostService::service()->delete($post_id);
 		
-		$this->actionlog(Actionlogs::TYPE_POST, '将文章移入回收站', $post_id);
+		$this->actionlog(ActionlogsTable::TYPE_POST, '将文章移入回收站', $post_id);
 		
 		Response::notify('success', array(
-			'message'=>'一篇文章被移入回收站 - '.Html::link('撤销', array('admin/post/undelete', array(
+			'message'=>'一篇文章被移入回收站 - '.HtmlHelper::link('撤销', array('admin/post/undelete', array(
 				'id'=>$post_id,
 			))),
 			'id'=>$post_id,
@@ -592,12 +591,12 @@ class PostController extends AdminController{
 	public function undelete(){
 		$post_id = $this->input->get('id', 'intval');
 		
-		if(!Post::checkUndeletePermission($post_id)){
+		if(!PostService::checkUndeletePermission($post_id)){
 			throw new HttpException('您无权限编辑该文章', 403, 'permission-denied');
 		}
 		PostService::service()->undelete($post_id);
 		
-		$this->actionlog(Actionlogs::TYPE_POST, '将文章移出回收站', $post_id);
+		$this->actionlog(ActionlogsTable::TYPE_POST, '将文章移出回收站', $post_id);
 		
 		Response::notify('success', array(
 			'message'=>'一篇文章被还原',
@@ -610,7 +609,7 @@ class PostController extends AdminController{
 		
 		PostService::service()->remove($post_id);
 		
-		$this->actionlog(Actionlogs::TYPE_POST, '将文章永久删除', $post_id);
+		$this->actionlog(ActionlogsTable::TYPE_POST, '将文章永久删除', $post_id);
 		
 		Response::notify('success', array(
 			'message'=>'一篇文章被永久删除',
@@ -623,14 +622,14 @@ class PostController extends AdminController{
 	 */
 	public function sort(){
 		$post_id = $this->input->get('id', 'intval');
-		Posts::model()->update(array(
+		PostsTable::model()->update(array(
 			'sort'=>$this->input->get('sort', 'intval'),
 		), array(
 			'id = ?'=>$post_id,
 		));
-		$this->actionlog(Actionlogs::TYPE_POST, '改变了文章排序', $post_id);
+		$this->actionlog(ActionlogsTable::TYPE_POST, '改变了文章排序', $post_id);
 		
-		$post = Posts::model()->find($post_id, 'sort');
+		$post = PostsTable::model()->find($post_id, 'sort');
 		Response::notify('success', array(
 			'message'=>'一篇文章的排序值被编辑',
 			'data'=>array(
@@ -647,14 +646,16 @@ class PostController extends AdminController{
 		$post_id = $this->input->get('post_id', 'intval');
 		
 		//文章对应附加属性值
-		$props = Prop::service()->getPropsByCat($cat_id);
-		if($post_id){
-			$this->view->prop_set = Prop::service()->getPropertySet($post_id, $props);
+		$props = PostPropService::service()->getPropsByCat($cat_id);
+		if(!empty($props) && $post_id){
+			$prop_set = PostPropService::service()->getPropertySet($post_id, $props);
 		}else{
-			$this->view->prop_set = $props;
+			$prop_set = $props;
 		}
 		
-		$this->view->renderPartial('_box_props');
+		$this->view->renderPartial('_box_props', array(
+			'prop_set'=>$prop_set,
+		));
 	}
 	
 	/**
@@ -670,8 +671,8 @@ class PostController extends AdminController{
 		));
 		
 		$this->layout->subtitle = '文章分类';
-		$this->view->cats = Category::service()->getTree('_system_post');
-		$root_node = Category::service()->getByAlias('_system_post', 'id');
+		$this->view->cats = CategoryService::service()->getTree('_system_post');
+		$root_node = CategoryService::service()->getByAlias('_system_post', 'id');
 		$this->view->root = $root_node['id'];
 		
 		if($this->checkPermission('admin/post/cat-create')){
@@ -696,79 +697,79 @@ class PostController extends AdminController{
 		switch($action){
 			case 'set-published':
 				foreach($ids as $id){
-					if(!Post::checkEditPermission($id, Posts::STATUS_PUBLISHED)){
+					if(!PostService::checkEditPermission($id, PostsTable::STATUS_PUBLISHED)){
 						throw new HttpException('您无权限编辑该文章', 403, 'permission-denied');
 					}
 				}
 				
-				$affected_rows = Post::service()->batchPublish($ids);
+				$affected_rows = PostService::service()->batchPublish($ids);
 				
-				$this->actionlog(Actionlogs::TYPE_POST, '批处理：文章' . json_encode($affected_rows) . '被发布');
+				$this->actionlog(ActionlogsTable::TYPE_POST, '批处理：文章' . json_encode($affected_rows) . '被发布');
 				Response::notify('success', count($affected_rows) . '篇文章被发布');
 			break;
 			case 'set-draft':
 				foreach($ids as $id){
-					if(!Post::checkEditPermission($id, Posts::STATUS_PUBLISHED)){
+					if(!PostService::checkEditPermission($id, PostsTable::STATUS_PUBLISHED)){
 						throw new HttpException('您无权限编辑该文章', 403, 'permission-denied');
 					}
 				}
 				
-				$affected_rows = Post::service()->batchDraft($ids);
+				$affected_rows = PostService::service()->batchDraft($ids);
 				
-				$this->actionlog(Actionlogs::TYPE_POST, '批处理：文章' . json_encode($affected_rows) . '被标记为“草稿”');
+				$this->actionlog(ActionlogsTable::TYPE_POST, '批处理：文章' . json_encode($affected_rows) . '被标记为“草稿”');
 				Response::notify('success', count($affected_rows) . '篇文章被标记为“草稿”');
 			break;
 			case 'set-pending':
 				foreach($ids as $id){
-					if(!Post::checkEditPermission($id, Posts::STATUS_PUBLISHED)){
+					if(!PostService::checkEditPermission($id, PostsTable::STATUS_PUBLISHED)){
 						throw new HttpException('您无权限编辑该文章', 403, 'permission-denied');
 					}
 				}
 				
-				$affected_rows = Post::service()->batchPending($ids);
+				$affected_rows = PostService::service()->batchPending($ids);
 				
-				$this->actionlog(Actionlogs::TYPE_POST, '批处理：文章' . json_encode($affected_rows) . '被标记为“待审核”');
+				$this->actionlog(ActionlogsTable::TYPE_POST, '批处理：文章' . json_encode($affected_rows) . '被标记为“待审核”');
 				Response::notify('success', count($affected_rows) . '篇文章被标记为“待审核”');
 			break;
 			case 'set-reviewed':
 				foreach($ids as $id){
-					if(!Post::checkEditPermission($id, Posts::STATUS_PUBLISHED)){
+					if(!PostService::checkEditPermission($id, PostsTable::STATUS_PUBLISHED)){
 						throw new HttpException('您无权限编辑该文章', 403, 'permission-denied');
 					}
 				}
 				
-				$affected_rows = Post::service()->batchReviewed($ids);
+				$affected_rows = PostService::service()->batchReviewed($ids);
 				
-				$this->actionlog(Actionlogs::TYPE_POST, '批处理：文章' . json_encode($affected_rows) . '被标记为“通过审核”');
+				$this->actionlog(ActionlogsTable::TYPE_POST, '批处理：文章' . json_encode($affected_rows) . '被标记为“通过审核”');
 				Response::notify('success', count($affected_rows) . '篇文章被标记为“通过审核”');
 			break;
 			case 'delete':
 				foreach($ids as $id){
-					if(!Post::checkDeletePermission($id)){
+					if(!PostService::checkDeletePermission($id)){
 						throw new HttpException('您无权限编辑该文章', 403, 'permission-denied');
 					}
 				}
 				
-				$affected_rows = Post::service()->batchDelete($ids);
+				$affected_rows = PostService::service()->batchDelete($ids);
 				
-				$this->actionlog(Actionlogs::TYPE_POST, '批处理：文章' . json_encode($affected_rows) . '被移入回收站');
+				$this->actionlog(ActionlogsTable::TYPE_POST, '批处理：文章' . json_encode($affected_rows) . '被移入回收站');
 				Response::notify('success', count($affected_rows) . '篇文章被移入回收站');
 			break;
 			case 'undelete':
 				foreach($ids as $id){
-					if(!Post::checkUndeletePermission($id)){
+					if(!PostService::checkUndeletePermission($id)){
 						throw new HttpException('您无权限编辑该文章', 403, 'permission-denied');
 					}
 				}
 				
-				$affected_rows = Post::service()->batchUndelete($ids);
+				$affected_rows = PostService::service()->batchUndelete($ids);
 				
-				$this->actionlog(Actionlogs::TYPE_POST, '批处理：文章' . json_encode($affected_rows) . '被还原');
+				$this->actionlog(ActionlogsTable::TYPE_POST, '批处理：文章' . json_encode($affected_rows) . '被还原');
 				Response::notify('success', count($affected_rows) . '篇文章被还原');
 			break;
 			case 'remove':
 				foreach($ids as $id){
-					if(!Post::checkRemovePermission($id)){
+					if(!PostService::checkRemovePermission($id)){
 						throw new HttpException('您无权限编辑该文章', 403, 'permission-denied');
 					}
 				}
@@ -780,7 +781,7 @@ class PostController extends AdminController{
 					}
 				}
 
-				$this->actionlog(Actionlogs::TYPE_POST, '批处理：文章' . json_encode($affected_rows) . '被永久删除');
+				$this->actionlog(ActionlogsTable::TYPE_POST, '批处理：文章' . json_encode($affected_rows) . '被永久删除');
 				Response::notify('success', count($affected_rows) . '篇文章被永久删除');
 			break;
 			default:
@@ -796,7 +797,7 @@ class PostController extends AdminController{
 	 * 验证文章别名是否存在（不排除已删除和未发布的文章）
 	 */
 	public function isAliasNotExist(){
-		if(Posts::model()->fetchRow(array(
+		if(PostsTable::model()->fetchRow(array(
 			'alias = ?'=>$this->input->request('alias', 'trim'),
 			'id != ?'=>$this->input->request('id', 'intval', false),
 		))){
@@ -811,10 +812,10 @@ class PostController extends AdminController{
 	 */
 	public function search(){
 		if($cat_id = $this->input->request('cat_id', 'intval')){
-			$cats = Category::service()->getChildIds($cat_id);
+			$cats = CategoryService::service()->getChildIds($cat_id);
 			$cats[] = $cat_id;
 		}
-		$posts = Posts::model()->fetchAll(array(
+		$posts = PostsTable::model()->fetchAll(array(
 			'title LIKE ?'=>'%'.$this->input->request('key', false).'%',
 			'cat_id IN (?)'=>isset($cats) ? $cats : false,
 		), 'id,title', 'id DESC', 20);
@@ -826,15 +827,15 @@ class PostController extends AdminController{
 	 */
 	public function getCounts(){
 		$data = array(
-			'all'=>\cms\models\Post::model()->getCount(),
-			'published'=>\cms\models\Post::model()->getCount(Posts::STATUS_PUBLISHED),
-			'draft'=>\cms\models\Post::model()->getCount(Posts::STATUS_DRAFT),
-			'deleted'=>\cms\models\Post::model()->getDeletedCount(),
+			'all'=>\cms\services\PostService::service()->getCount(),
+			'published'=>\cms\services\PostService::service()->getCount(PostsTable::STATUS_PUBLISHED),
+			'draft'=>\cms\services\PostService::service()->getCount(PostsTable::STATUS_DRAFT),
+			'deleted'=>\cms\services\PostService::service()->getDeletedCount(),
 		);
 		
 		if($this->post_review){
-			$data['pending'] = \cms\models\Post::model()->getCount(Posts::STATUS_PENDING);
-			$data['reviewed'] = \cms\models\Post::model()->getCount(Posts::STATUS_REVIEWED);
+			$data['pending'] = \cms\services\PostService::service()->getCount(PostsTable::STATUS_PENDING);
+			$data['reviewed'] = \cms\services\PostService::service()->getCount(PostsTable::STATUS_REVIEWED);
 		}
 		
 		Response::json($data);

@@ -1,7 +1,7 @@
 <?php
-use fay\helpers\Date;
-use fay\helpers\Html;
-use fay\models\tables\ExamQuestions;
+use fay\helpers\DateHelper;
+use fay\helpers\HtmlHelper;
+use fay\models\tables\ExamQuestionsTable;
 ?>
 <div class="row">
 	<div class="col-12">
@@ -11,13 +11,13 @@ use fay\models\tables\ExamQuestions;
 					<tbody>
 						<tr>
 							<th>试卷名称</th>
-							<td colspan=3"><?php echo Html::encode($paper['title'])?></td>
+							<td colspan=3"><?php echo HtmlHelper::encode($paper['title'])?></td>
 						</tr>
 						<tr>
 							<th>考试时间</th>
-							<td colspan=3"><?php echo Date::diff($exam['start_time'], $exam['end_time']), ' ( ',
-								Date::format($exam['start_time']), ' 至 ',
-								Date::format($exam['end_time']), ' )'?></td>
+							<td colspan=3"><?php echo DateHelper::diff($exam['start_time'], $exam['end_time']), ' ( ',
+								DateHelper::format($exam['start_time']), ' 至 ',
+								DateHelper::format($exam['end_time']), ' )'?></td>
 						</tr>
 						<tr>
 							<th>得分</th>
@@ -31,9 +31,9 @@ use fay\models\tables\ExamQuestions;
 						</tr>
 						<tr>
 							<th>用户名</th>
-							<td><?php echo Html::encode($user['username'])?></td>
+							<td><?php echo HtmlHelper::encode($user['username'])?></td>
 							<th>用户昵称</th>
-							<td><?php echo Html::encode($user['nickname'])?></td>
+							<td><?php echo HtmlHelper::encode($user['nickname'])?></td>
 						</tr>
 					</tbody>
 				</table>
@@ -41,25 +41,25 @@ use fay\models\tables\ExamQuestions;
 			<div class="exam-question-list">
 			<?php foreach($exam_questions as $index => $eq){
 				switch($eq['type']){
-					case ExamQuestions::TYPE_SINGLE_ANSWER:
+					case ExamQuestionsTable::TYPE_SINGLE_ANSWER:
 						$this->renderPartial('_question_single_answer', array(
 							'index'=>$index,
 							'exam_question'=>$eq,
 						));
 					break;
-					case ExamQuestions::TYPE_TRUE_OR_FALSE:
+					case ExamQuestionsTable::TYPE_TRUE_OR_FALSE:
 						$this->renderPartial('_question_true_or_false', array(
 							'index'=>$index,
 							'exam_question'=>$eq,
 						));
 					break;
-					case ExamQuestions::TYPE_MULTIPLE_ANSWERS:
+					case ExamQuestionsTable::TYPE_MULTIPLE_ANSWERS:
 						$this->renderPartial('_question_multiple_answer', array(
 							'index'=>$index,
 							'exam_question'=>$eq,
 						));
 					break;
-					case ExamQuestions::TYPE_INPUT:
+					case ExamQuestionsTable::TYPE_INPUT:
 						$this->renderPartial('_question_input', array(
 							'index'=>$index,
 							'exam_question'=>$eq,

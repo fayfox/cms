@@ -2,17 +2,17 @@
 namespace cms\modules\admin\controllers;
 
 use cms\library\AdminController;
-use fay\models\tables\Feeds;
-use fay\models\tables\FeedsFiles;
-use fay\services\Setting;
-use fay\services\Feed;
-use fay\models\tables\Actionlogs;
+use fay\models\tables\FeedsTable;
+use fay\models\tables\FeedsFilesTable;
+use fay\services\SettingService;
+use fay\services\FeedService;
+use fay\models\tables\ActionlogsTable;
 use fay\core\Response;
-use fay\models\tables\FeedExtra;
+use fay\models\tables\FeedExtraTable;
 use fay\core\Sql;
-use fay\models\tables\FeedMeta;
+use fay\models\tables\FeedMetaTable;
 use fay\common\ListView;
-use fay\helpers\Html;
+use fay\helpers\HtmlHelper;
 
 class FeedController extends AdminController{
 	/**
@@ -55,9 +55,9 @@ class FeedController extends AdminController{
 			);
 		}
 		
-		$this->form()->setModel(Feeds::model())
-			->setModel(FeedsFiles::model())
-			->setModel(FeedExtra::model());
+		$this->form()->setModel(FeedsTable::model())
+			->setModel(FeedsFilesTable::model())
+			->setModel(FeedExtraTable::model());
 		
 		//启用的编辑框
 		$_setting_key = 'admin_feed_boxes';
@@ -65,7 +65,7 @@ class FeedController extends AdminController{
 		
 		if($this->input->post() && $this->form()->check()){
 			//添加feeds表
-			$data = Feeds::model()->fillData($this->input->post());
+			$data = FeedsTable::model()->fillData($this->input->post());
 			
 			//发布时间特殊处理
 			if(in_array('publish_time', $enabled_boxes)){
@@ -93,16 +93,16 @@ class FeedController extends AdminController{
 				$extra['files'][$f] = isset($description[$f]) ? $description[$f] : '';
 			}
 			
-			$feed_id = Feed::service()->create($data, $extra, $this->current_user);
+			$feed_id = FeedService::service()->create($data, $extra, $this->current_user);
 			
-			$this->actionlog(Actionlogs::TYPE_FEED, '添加动态', $feed_id);
+			$this->actionlog(ActionlogsTable::TYPE_FEED, '添加动态', $feed_id);
 			Response::notify('success', '动态发布成功', array('admin/feed/edit', array(
 				'id'=>$feed_id,
 			)));
 		}
 		
 		//可配置信息
-		$_box_sort_settings = Setting::service()->get('admin_feed_box_sort');
+		$_box_sort_settings = SettingService::service()->get('admin_feed_box_sort');
 		$_box_sort_settings || $_box_sort_settings = $this->default_box_sort;
 		$this->view->_box_sort_settings = $_box_sort_settings;
 		
@@ -123,9 +123,9 @@ class FeedController extends AdminController{
 			);
 		}
 		
-		$this->form()->setModel(Feeds::model())
-			->setModel(FeedsFiles::model())
-			->setModel(FeedExtra::model());
+		$this->form()->setModel(FeedsTable::model())
+			->setModel(FeedsFilesTable::model())
+			->setModel(FeedExtraTable::model());
 		
 		//启用的编辑框
 		$_setting_key = 'admin_feed_boxes';
@@ -135,7 +135,7 @@ class FeedController extends AdminController{
 		
 		if($this->input->post() && $this->form()->check()){
 			//添加feeds表
-			$data = Feeds::model()->fillData($this->input->post());
+			$data = FeedsTable::model()->fillData($this->input->post());
 				
 			//发布时间特殊处理
 			if(in_array('publish_time', $enabled_boxes)){
@@ -160,7 +160,7 @@ class FeedController extends AdminController{
 			$extra = array();
 			
 			//动态扩展表
-			$extra['extra'] = FeedExtra::model()->fillData($this->input->post());
+			$extra['extra'] = FeedExtraTable::model()->fillData($this->input->post());
 			
 			//标签
 			if($tags = $this->input->post('tags')){
@@ -175,16 +175,16 @@ class FeedController extends AdminController{
 				$extra['files'][$f] = isset($description[$f]) ? $description[$f] : '';
 			}
 			
-			Feed::service()->update($feed_id, $data, $extra);
+			FeedService::service()->update($feed_id, $data, $extra);
 			
-			$this->actionlog(Actionlogs::TYPE_FEED, '编辑动态', $feed_id);
+			$this->actionlog(ActionlogsTable::TYPE_FEED, '编辑动态', $feed_id);
 			Response::notify('success', '动态编辑成功', false);
 		}
 		
 		$sql = new Sql();
-		$feed = $sql->from(array('f'=>'feeds'), Feeds::model()->getFields())
-			->joinLeft(array('fm'=>'feed_meta'), 'f.id = fm.feed_id', FeedMeta::model()->getFields(array('feed_id')))
-			->joinLeft(array('fe'=>'feed_extra'), 'f.id = fe.feed_id', FeedExtra::model()->getFields(array('feed_id')))
+		$feed = $sql->from(array('f'=>'feeds'), FeedsTable::model()->getFields())
+			->joinLeft(array('fm'=>'feed_meta'), 'f.id = fm.feed_id', FeedMetaTable::model()->getFields(array('feed_id')))
+			->joinLeft(array('fe'=>'feed_extra'), 'f.id = fe.feed_id', FeedExtraTable::model()->getFields(array('feed_id')))
 			->where('f.id = ' . $feed_id)
 			->fetchRow()
 		;
@@ -204,7 +204,7 @@ class FeedController extends AdminController{
 		$this->form()->setData(array('tags'=>implode(',', $tags_arr)));
 		
 		//配图
-		$this->view->files = FeedsFiles::model()->fetchAll(array(
+		$this->view->files = FeedsFilesTable::model()->fetchAll(array(
 			'feed_id = ?'=>$feed_id,
 		), 'file_id,description', 'sort');
 		
@@ -212,7 +212,7 @@ class FeedController extends AdminController{
 		$this->view->feed = $feed;
 		
 		//可配置信息
-		$_box_sort_settings = Setting::service()->get('admin_feed_box_sort');
+		$_box_sort_settings = SettingService::service()->get('admin_feed_box_sort');
 		$_box_sort_settings || $_box_sort_settings = $this->default_box_sort;
 		$this->view->_box_sort_settings = $_box_sort_settings;
 		
@@ -226,13 +226,13 @@ class FeedController extends AdminController{
 	
 	public function index(){
 		//搜索条件验证，异常数据直接返回404
-		$this->form()->setScene('final')->setRules(array(
+		$this->form('search')->setScene('final')->setRules(array(
 			array(array('start_time', 'end_time'), 'datetime'),
 			array('orderby', 'range', array(
-				'range'=>Feeds::model()->getFields(),
+				'range'=>FeedsTable::model()->getFields(),
 			)),
 			array('keywords_field', 'range', array(
-				'range'=>Feeds::model()->getFields(),
+				'range'=>FeedsTable::model()->getFields(),
 			)),
 			array('order', 'range', array(
 				'range'=>array('asc', 'desc'),
@@ -263,8 +263,8 @@ class FeedController extends AdminController{
 		
 		$sql = new Sql();
 		$sql->from(array('f'=>'feeds'))
-			->joinLeft(array('fm'=>'feed_meta'), 'f.id = fm.feed_id', FeedMeta::model()->getFields(array('feed_id')))
-			->joinLeft(array('fe'=>'feed_extra'), 'f.id = fe.feed_id', FeedExtra::model()->getFields(array('feed_id')))
+			->joinLeft(array('fm'=>'feed_meta'), 'f.id = fm.feed_id', FeedMetaTable::model()->getFields(array('feed_id')))
+			->joinLeft(array('fe'=>'feed_extra'), 'f.id = fe.feed_id', FeedExtraTable::model()->getFields(array('feed_id')))
 		;
 		
 		//文章状态
@@ -310,12 +310,12 @@ class FeedController extends AdminController{
 	 */
 	public function getCounts(){
 		$data = array(
-			'all'=>\cms\models\Feed::model()->getCount(),
-			'approved'=>\cms\models\Feed::model()->getCount(Feeds::STATUS_APPROVED),
-			'unapproved'=>\cms\models\Feed::model()->getCount(Feeds::STATUS_UNAPPROVED),
-			'pending'=>\cms\models\Feed::model()->getCount(Feeds::STATUS_PENDING),
-			'draft'=>\cms\models\Feed::model()->getCount(Feeds::STATUS_DRAFT),
-			'deleted'=>\cms\models\Feed::model()->getDeletedCount(),
+			'all'=>\cms\services\FeedService::service()->getCount(),
+			'approved'=>\cms\services\FeedService::service()->getCount(FeedsTable::STATUS_APPROVED),
+			'unapproved'=>\cms\services\FeedService::service()->getCount(FeedsTable::STATUS_UNAPPROVED),
+			'pending'=>\cms\services\FeedService::service()->getCount(FeedsTable::STATUS_PENDING),
+			'draft'=>\cms\services\FeedService::service()->getCount(FeedsTable::STATUS_DRAFT),
+			'deleted'=>\cms\services\FeedService::service()->getDeletedCount(),
 		);
 		
 		Response::json($data);
@@ -328,12 +328,12 @@ class FeedController extends AdminController{
 	public function delete(){
 		$feed_id = $this->input->get('id', 'intval');
 		
-		Feed::service()->delete($feed_id);
+		FeedService::service()->delete($feed_id);
 		
-		$this->actionlog(Actionlogs::TYPE_FEED, '将动态移入回收站', $feed_id);
+		$this->actionlog(ActionlogsTable::TYPE_FEED, '将动态移入回收站', $feed_id);
 		
 		Response::notify('success', array(
-			'message'=>'一篇动态被移入回收站 - '.Html::link('撤销', array('admin/feed/undelete', array(
+			'message'=>'一篇动态被移入回收站 - '.HtmlHelper::link('撤销', array('admin/feed/undelete', array(
 				'id'=>$feed_id,
 			))),
 			'id'=>$feed_id,
@@ -347,9 +347,9 @@ class FeedController extends AdminController{
 	public function undelete(){
 		$feed_id = $this->input->get('id', 'intval');
 		
-		Feed::service()->undelete($feed_id);
+		FeedService::service()->undelete($feed_id);
 		
-		$this->actionlog(Actionlogs::TYPE_FEED, '将动态移出回收站', $feed_id);
+		$this->actionlog(ActionlogsTable::TYPE_FEED, '将动态移出回收站', $feed_id);
 		
 		Response::notify('success', array(
 			'message'=>'一篇动态被还原',
@@ -360,9 +360,9 @@ class FeedController extends AdminController{
 	public function remove(){
 		$feed_id = $this->input->get('id', 'intval');
 		
-		Feed::service()->remove($feed_id);
+		FeedService::service()->remove($feed_id);
 		
-		$this->actionlog(Actionlogs::TYPE_FEED, '将动态永久删除', $feed_id);
+		$this->actionlog(ActionlogsTable::TYPE_FEED, '将动态永久删除', $feed_id);
 		
 		Response::notify('success', array(
 			'message'=>'一篇动态被永久删除',

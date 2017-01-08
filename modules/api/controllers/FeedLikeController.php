@@ -3,10 +3,10 @@ namespace cms\modules\api\controllers;
 
 use cms\library\ApiController;
 use fay\core\Response;
-use fay\services\feed\Like as FeedLike;
-use fay\models\Feed;
+use fay\services\feed\FeedLikeService;
+use fay\services\FeedService;
 use fay\helpers\FieldHelper;
-use fay\services\User;
+use fay\services\UserService;
 
 /**
  * 动态点赞
@@ -34,21 +34,21 @@ class FeedLikeController extends ApiController{
 		
 		$feed_id = $this->form()->getData('feed_id');
 		
-		if(!Feed::isFeedIdExist($feed_id)){
+		if(!FeedService::isFeedIdExist($feed_id)){
 			Response::notify('error', array(
 				'message'=>'动态ID不存在',
 				'code'=>'invalid-parameter:feed_id-is-not-exist',
 			));
 		}
 		
-		if(FeedLike::isLiked($feed_id)){
+		if(FeedLikeService::isLiked($feed_id)){
 			Response::notify('error', array(
 				'message'=>'您已赞过该动态',
 				'code'=>'already-favorited',
 			));
 		}
 		
-		FeedLike::add($feed_id, $this->form()->getData('trackid', ''));
+		FeedLikeService::add($feed_id, $this->form()->getData('trackid', ''));
 		
 		Response::notify('success', '点赞成功');
 	}
@@ -73,14 +73,14 @@ class FeedLikeController extends ApiController{
 		
 		$feed_id = $this->form()->getData('feed_id');
 		
-		if(!FeedLike::isLiked($feed_id)){
+		if(!FeedLikeService::isLiked($feed_id)){
 			Response::notify('error', array(
 				'message'=>'您未赞过该动态',
 				'code'=>'not-liked',
 			));
 		}
 		
-		FeedLike::remove($feed_id);
+		FeedLikeService::remove($feed_id);
 		
 		Response::notify('success', '取消点赞成功');
 	}
@@ -110,7 +110,7 @@ class FeedLikeController extends ApiController{
 		
 		$feed_id = $this->form()->getData('feed_id');
 		
-		if(!Feed::isFeedIdExist($feed_id)){
+		if(!FeedService::isFeedIdExist($feed_id)){
 			Response::notify('error', array(
 				'message'=>'动态ID不存在',
 				'code'=>'invalid-parameter:feed_id-is-not-exist',
@@ -122,10 +122,10 @@ class FeedLikeController extends ApiController{
 			//过滤字段，移除那些不允许的字段
 			$fields = FieldHelper::parse($fields, 'feed', User::$public_fields);
 		}else{
-			$fields = User::$default_fields;
+			$fields = UserService::$default_fields;
 		}
 		
-		$likes = FeedLike::service()->getFeedLikes($feed_id,
+		$likes = FeedLikeService::service()->getFeedLikes($feed_id,
 			$fields,
 			$this->form()->getData('page', 1),
 			$this->form()->getData('page_size', 20));
@@ -159,12 +159,12 @@ class FeedLikeController extends ApiController{
 		$fields = $this->form()->getData('fields');
 		if($fields){
 			//过滤字段，移除那些不允许的字段
-			$fields = FieldHelper::parse($fields, 'feed', Feed::$public_fields);
+			$fields = FieldHelper::parse($fields, 'feed', FeedService::$public_fields);
 		}else{
-			$fields = Feed::$default_fields;
+			$fields = FeedService::$default_fields;
 		}
 		
-		$likes = FeedLike::service()->getUserLikes($fields,
+		$likes = FeedLikeService::service()->getUserLikes($fields,
 			$this->form()->getData('page', 1),
 			$this->form()->getData('page_size', 20));
 		Response::json($likes);

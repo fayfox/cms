@@ -2,12 +2,12 @@
 namespace cms\modules\admin\controllers;
 
 use fay\core\Controller;
-use fay\services\Log;
+use fay\services\LogService;
 use fay\core\Response;
-use fay\models\tables\Logs;
+use fay\models\tables\LogsTable;
 use fay\core\Loader;
-use fay\services\User;
-use fay\services\user\Password;
+use fay\services\UserService;
+use fay\services\user\UserPasswordService;
 
 class LoginController extends Controller{
 	public function __construct(){
@@ -22,22 +22,22 @@ class LoginController extends Controller{
 		$this->config->set('debug', false);
 		
 		if($this->input->post()){
-			$result = Password::service()->checkPassword(
+			$result = UserPasswordService::service()->checkPassword(
 				$this->input->post('username'),
 				$this->input->post('password'),
 				true
 			);
 			
 			if($result['user_id']){
-				$user = User::service()->login($result['user_id']);
+				$user = UserService::service()->login($result['user_id']);
 			}else{
 				Response::notify('error', array(
 					'message'=>isset($result['message']) ? $result['message'] : '登录失败',
 					'code'=>isset($result['error_code']) ? $result['error_code'] : '',
 				));
 			}
-			if($user){
-				Log::set('admin:action:login.success', array(
+			if(!empty($user)){
+				LogService::set('admin:action:login.success', array(
 					'fmac'=>isset($_COOKIE['fmac']) ? $_COOKIE['fmac'] : '',
 					'username'=>$this->input->post('username'),
 				));
@@ -48,11 +48,11 @@ class LoginController extends Controller{
 					Response::redirect('admin/index/index');
 				}
 			}else{
-				Log::set('admin:action:login.fail', array(
+				LogService::set('admin:action:login.fail', array(
 					'error_code'=>$result['error_code'],
 					'username'=>$this->input->post('username'),
 					'password'=>$this->input->post('password'),
-				), Logs::TYPE_WARMING);
+				), LogsTable::TYPE_WARMING);
 				$this->view->error = $result['message'];
 			}
 		}
@@ -65,7 +65,7 @@ class LoginController extends Controller{
 	}
 	
 	public function logout(){
-		User::service()->logout();
+		UserService::service()->logout();
 		Response::redirect('admin/login/index');
 	}
 }

@@ -3,12 +3,12 @@ namespace cms\library;
 
 use fay\core\Controller;
 use fay\core\Uri;
-use fay\services\File;
+use fay\services\FileService;
 use fay\core\Response;
 use fay\core\HttpException;
-use fay\models\tables\Roles;
-use fay\services\User;
-use fay\services\user\Role;
+use fay\models\tables\RolesTable;
+use fay\services\UserService;
+use fay\services\user\UserRoleService;
 
 class ToolsController extends Controller{
 	public $layout_template = 'admin';
@@ -29,7 +29,7 @@ class ToolsController extends Controller{
 			'label'=>'Tools',
 			'icon'=>'fa fa-wrench',
 			'router'=>'tools',
-			'roles'=>Roles::ITEM_SUPER_ADMIN,
+			'roles'=>RolesTable::ITEM_SUPER_ADMIN,
 		),
 	);
 	
@@ -56,17 +56,17 @@ class ToolsController extends Controller{
 		$this->current_user = \F::session()->get('user.id', 0);
 		
 		//验证session中是否有值
-		if(!User::service()->isAdmin()){
+		if(!UserService::service()->isAdmin()){
 			Response::redirect('admin/login/index', array('redirect'=>base64_encode($this->view->url(Uri::getInstance()->router, $this->input->get()))));
 		}
 		
-		if(!Role::service()->is(Roles::ITEM_SUPER_ADMIN)){
+		if(!UserRoleService::service()->is(RolesTable::ITEM_SUPER_ADMIN)){
 			throw new HttpException('仅超级管理员可访问此模块', 403);
 		}
 	}
 	
 	public function getApps(){
-		$app_dirs = File::getFileList(APPLICATION_PATH.'..');
+		$app_dirs = FileService::getFileList(APPLICATION_PATH.'..');
 		$apps = array();
 		foreach($app_dirs as $app){
 			$apps[] = $app['name'];

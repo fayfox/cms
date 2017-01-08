@@ -2,15 +2,14 @@
 namespace cms\widgets\feeds\controllers;
 
 use fay\widget\Widget;
-use fay\models\tables\Logs;
+use fay\models\tables\LogsTable;
 
 class IndexController extends Widget{
-	
-	public function index($options){
-		$this->view->logs = Logs::model()->fetchAll(array(
+	public function index(){
+		$this->view->logs = LogsTable::model()->fetchAll(array(
 			'or'=>array(
-				'type = '.Logs::TYPE_ERROR,
-				'type = '.Logs::TYPE_WARMING,
+				'type = '.LogsTable::TYPE_ERROR,
+				'type = '.LogsTable::TYPE_WARMING,
 			)
 		), 'id,code,create_time,type', 'id DESC', 20);
 		

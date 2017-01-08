@@ -2,19 +2,19 @@
 namespace cms\modules\admin\controllers;
 
 use cms\library\AdminController;
-use fay\models\tables\Users;
+use fay\models\tables\UsersTable;
 use fay\core\Sql;
-use fay\models\tables\Roles;
-use fay\models\tables\Actionlogs;
+use fay\models\tables\RolesTable;
+use fay\models\tables\ActionlogsTable;
 use fay\common\ListView;
-use fay\services\user\Prop;
-use fay\services\User;
+use fay\services\user\UserPropService;
+use fay\services\UserService;
 use fay\core\Response;
-use fay\helpers\Html;
+use fay\helpers\HtmlHelper;
 use fay\core\HttpException;
 use fay\core\Loader;
-use fay\models\tables\UserProfile;
-use fay\services\user\Role;
+use fay\models\tables\UserProfileTable;
+use fay\services\user\UserRoleService;
 
 class OperatorController extends AdminController{
 	public function __construct(){
@@ -24,11 +24,11 @@ class OperatorController extends AdminController{
 	
 	public function index(){
 		//搜索条件验证，异常数据直接返回404
-		$this->form()->setScene('final')->setRules(array(
+		$this->form('search')->setScene('final')->setRules(array(
 			array('orderby', 'range', array(
 				'range'=>array_merge(
-					Users::model()->getFields(),
-					UserProfile::model()->getFields()
+					UsersTable::model()->getFields(),
+					UserProfileTable::model()->getFields()
 				),
 			)),
 			array('order', 'range', array(
@@ -36,8 +36,8 @@ class OperatorController extends AdminController{
 			)),
 			array('keywords_field', 'range', array(
 				'range'=>array_merge(
-					Users::model()->getFields(),
-					UserProfile::model()->getFields()
+					UsersTable::model()->getFields(),
+					UserProfileTable::model()->getFields()
 				),
 			)),
 		))->check();
@@ -56,7 +56,7 @@ class OperatorController extends AdminController{
 		));
 		
 		//查询所有管理员类型
-		$this->view->roles = Roles::model()->fetchAll(array(
+		$this->view->roles = RolesTable::model()->fetchAll(array(
 			'deleted = 0',
 			'admin = 1',
 		));
@@ -74,7 +74,7 @@ class OperatorController extends AdminController{
 				));
 			}else{
 				$field = $this->input->get('field');
-				if(in_array($field, Users::model()->getFields())){
+				if(in_array($field, UsersTable::model()->getFields())){
 					$sql->where(array(
 						"u.{$field} LIKE ?"=>'%'.$this->input->get('keywords').'%',
 					));
@@ -110,15 +110,15 @@ class OperatorController extends AdminController{
 		$this->layout->subtitle = '添加管理员';
 		
 		$this->form()->setScene('create')
-			->setModel(Users::model())
-			->setModel(UserProfile::model())
+			->setModel(UsersTable::model())
+			->setModel(UserProfileTable::model())
 			->setRules(array(
 				array(array('username', 'password'), 'required'),
 				array('roles', 'int'),
 			));
 		if($this->input->post() && $this->form()->check()){
-			$data = Users::model()->fillData($this->input->post());
-			isset($data['status']) || $data['status'] = Users::STATUS_VERIFIED;
+			$data = UsersTable::model()->fillData($this->input->post());
+			isset($data['status']) || $data['status'] = UsersTable::STATUS_VERIFIED;
 			
 			$extra = array(
 				'profile'=>array(
@@ -128,17 +128,17 @@ class OperatorController extends AdminController{
 				'props'=>$this->input->post('props', '', array()),
 			);
 			
-			$user_id = User::service()->create($data, $extra, 1);
+			$user_id = UserService::service()->create($data, $extra, 1);
 			
-			$this->actionlog(Actionlogs::TYPE_USERS, '添加了一个管理员', $user_id);
+			$this->actionlog(ActionlogsTable::TYPE_USERS, '添加了一个管理员', $user_id);
 			
-			Response::notify('success', '管理员添加成功， '.Html::link('继续添加', array('admin/operator/create', array(
+			Response::notify('success', '管理员添加成功， '.HtmlHelper::link('继续添加', array('admin/operator/create', array(
 				'roles'=>$this->input->post('roles', 'intval', array()),
 			))), array('admin/operator/edit', array(
 				'id'=>$user_id,
 			)));
 		}
-		$this->view->roles = Roles::model()->fetchAll(array(
+		$this->view->roles = RolesTable::model()->fetchAll(array(
 			'admin = 1',
 			'deleted = 0',
 		), 'id,title');
@@ -146,7 +146,7 @@ class OperatorController extends AdminController{
 		//有可能默认了某些角色
 		$role_ids = $this->input->get('roles', 'intval');
 		if($role_ids){
-			$this->view->prop_set = Prop::service()->getByRefer($role_ids);
+			$this->view->prop_set = PropService::service()->getByRefer($role_ids);
 		}else{
 			$this->view->prop_set = array();
 		}
@@ -158,47 +158,47 @@ class OperatorController extends AdminController{
 		$this->layout->subtitle = '编辑管理员信息';
 		$user_id = $this->input->request('id', 'intval');
 		
-		if(Role::service()->is(Roles::ITEM_SUPER_ADMIN, $user_id) && !Role::service()->is(Roles::ITEM_SUPER_ADMIN)){
+		if(UserRoleService::service()->is(RolesTable::ITEM_SUPER_ADMIN, $user_id) && !UserRoleService::service()->is(RolesTable::ITEM_SUPER_ADMIN)){
 			throw new HttpException('您无权编辑超级管理员账户', '403');
 		}
 		
 		$this->form()->setScene('edit')
-			->setModel(Users::model());
+			->setModel(UsersTable::model());
 		if($this->input->post() && $this->form()->check()){
-			$data = Users::model()->fillData($this->input->post());
+			$data = UsersTable::model()->fillData($this->input->post());
 			
 			$extra = array(
 				'roles'=>$this->input->post('roles', 'intval', array()),
 				'props'=>$this->input->post('props', '', array()),
 			);
 			
-			User::service()->update($user_id, $data, $extra);
+			UserService::service()->update($user_id, $data, $extra);
 			
-			$this->actionlog(Actionlogs::TYPE_PROFILE, '编辑了管理员信息', $user_id);
+			$this->actionlog(ActionlogsTable::TYPE_PROFILE, '编辑了管理员信息', $user_id);
 			Response::notify('success', '修改成功', false);
 			
 			//置空密码字段
 			$this->form()->setData(array('password'=>''), true);
 		}
 		
-		$user = User::service()->get($user_id, 'user.*,profile.*');
-		$user_role_ids = Role::service()->getIds($user_id);
+		$user = UserService::service()->get($user_id, 'user.*,profile.*');
+		$user_role_ids = UserRoleService::service()->getIds($user_id);
 		$this->view->user = $user;
 		$this->form()->setData($user['user'])
 			->setData(array('roles'=>$user_role_ids));
 		
-		$this->view->roles = Roles::model()->fetchAll(array(
+		$this->view->roles = RolesTable::model()->fetchAll(array(
 			'admin = 1',
 			'deleted = 0',
 		), 'id,title');	
 		
-		$this->view->prop_set = Prop::service()->getPropertySet($user_id);
+		$this->view->prop_set = PropService::service()->getPropertySet($user_id);
 		$this->view->render();
 	}
 	
 	public function item(){
 		if($id = $this->input->get('id', 'intval')){
-			$this->view->user = User::service()->get($id, 'user.*,props.*,roles.title,profile.*');
+			$this->view->user = UserService::service()->get($id, 'user.*,props.*,roles.title,profile.*');
 		}else{
 			throw new HttpException('参数不完整', 500);
 		}

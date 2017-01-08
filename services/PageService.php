@@ -1,17 +1,16 @@
 <?php
-namespace cms\models;
+namespace cms\services;
 
-use fay\core\Model;
-use fay\models\tables\Pages;
+use fay\core\Service;
+use fay\models\tables\PagesTable;
 
-class Page extends Model{
-
+class PageService extends Service{
 	/**
 	 * @param string $class_name
-	 * @return Page
+	 * @return PageService
 	 */
-	public static function model($class_name = __CLASS__){
-		return parent::model($class_name);
+	public static function service($class_name = __CLASS__){
+		return parent::service($class_name);
 	}
 	
 	/**
@@ -24,7 +23,7 @@ class Page extends Model{
 		if($status !== null){
 			$conditions['status = ?'] = $status;
 		}
-		$result = Pages::model()->fetchRow($conditions, 'COUNT(*)');
+		$result = PagesTable::model()->fetchRow($conditions, 'COUNT(*)');
 		return $result['COUNT(*)'];
 	}
 	
@@ -33,7 +32,7 @@ class Page extends Model{
 	 * @return string
 	 */
 	public function getDeletedCount(){
-		$result = Pages::model()->fetchRow('deleted = 1', 'COUNT(*)');
+		$result = PagesTable::model()->fetchRow('deleted = 1', 'COUNT(*)');
 		return $result['COUNT(*)'];
 	}
 }

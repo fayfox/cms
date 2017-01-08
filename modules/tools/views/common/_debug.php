@@ -2,10 +2,10 @@
 /**
  * 开发模式或debug模式下，出现在页面底部的debug数据
  */
-use fay\helpers\Backtrace;
+use fay\helpers\BacktraceHelper;
 use fay\helpers\StringHelper;
 use fay\helpers\SqlHelper;
-use fay\helpers\Html;
+use fay\helpers\HtmlHelper;
 use fay\core\Db;
 
 if(Db::hasInstance()){
@@ -20,11 +20,11 @@ if(Db::hasInstance()){
 #debug-container .tabbable .nav-tabs{zoom:1;clear:left;padding:0;margin:0} 
 #debug-container .tabbable .nav-tabs:before, .tabbable .nav-tabs:after{content:"";display:table}
 #debug-container .tabbable .nav-tabs:after{clear: both}
-#debug-container .tabbable .nav-tabs li{display:block;float:left;margin-right:4px;margin-bottom:-1px;padding-top:1px;background-color:#FFFFFF;border:1px solid #DDDDDD}
-#debug-container .tabbable .nav-tabs li a{display:block;padding:3px 18px;transition:none;color:#AAAAAA}
+#debug-container .tabbable .nav-tabs li{display:block;float:left;margin-right:4px;margin-bottom:-1px;padding-top:1px;background-color:#fff;border:1px solid #ddd}
+#debug-container .tabbable .nav-tabs li a{display:block;padding:3px 18px;transition:none;color:#aaa;line-height:1.5}
 #debug-container .tabbable .nav-tabs li.active{font-weight:400;padding-top:0;border-bottom:0;border-top:0}
-#debug-container .tabbable .nav-tabs li.active a{background-color:#FFFFFF;border-top:3px solid #D12610;color:#000000}
-#debug-container .tabbable .tab-content{background-color:#FFFFFF;border:1px solid #DDDDDD;padding:10px;box-shadow:0 1px 1px rgba(0, 0, 0, 0.04)}
+#debug-container .tabbable .nav-tabs li.active a{background-color:#fff;border-top:3px solid #D12610;color:#000}
+#debug-container .tabbable .tab-content{background-color:#fff;border:1px solid #ddd;padding:10px;box-shadow:0 1px 1px rgba(0, 0, 0, 0.04)}
 #debug-container .tabbable .tab-pane{position:relative}
 
 /* 常见的普通表格式样 */
@@ -52,6 +52,7 @@ if(Db::hasInstance()){
 		<ul class="nav-tabs">
 			<li class="active"><a href="#debug-tab-1">Sql Log</a></li>
 			<li><a href="#debug-tab-2">Backtrace</a></li>
+			<li><a href="#debug-tab-3">Runtimes</a></li>
 		</ul>
 		<div class="tab-content">
 			<div id="debug-tab-1" class="tab-pane p5">
@@ -70,7 +71,7 @@ if(Db::hasInstance()){
 						$total_db_time += $s[2]?>
 					<tr>
 						<td><?php echo $k+1?></td>
-						<td><?php echo SqlHelper::nice(Html::encode($s[0]), $s[1])?></td>
+						<td><?php echo SqlHelper::nice(HtmlHelper::encode($s[0]), $s[1])?></td>
 						<td class="time"><?php echo StringHelper::money($s[2] * 1000)?>ms</td>
 					</tr>
 				<?php }?>
@@ -81,7 +82,10 @@ if(Db::hasInstance()){
 				</table>
 			</div>
 			<div id="debug-tab-2" class="tab-pane p5 hide" style="display:none;">
-				<?php Backtrace::render()?>
+				<?php BacktraceHelper::render()?>
+			</div>
+			<div id="debug-tab-3" class="tab-pane p5 hide" style="display:none;">
+				<?php \fay\helpers\RuntimeHelper::render();?>
 			</div>
 		</div>
 	</div>

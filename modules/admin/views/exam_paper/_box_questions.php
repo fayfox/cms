@@ -1,6 +1,6 @@
 <?php
-use fay\helpers\Html;
-use fay\models\tables\ExamQuestions;
+use fay\helpers\HtmlHelper;
+use fay\models\tables\ExamQuestionsTable;
 ?>
 
 <div class="box" id="box-questions">
@@ -17,28 +17,28 @@ use fay\models\tables\ExamQuestions;
 			<?php if(!empty($questions)){?>
 				<?php foreach($questions as $q){?>
 					<div class="dragsort-item">
-						<?php echo Html::inputHidden('questions[]', $q['question_id'])?>
+						<?php echo HtmlHelper::inputHidden('questions[]', $q['question_id'])?>
 						<a class="dragsort-rm" href="javascript:;"></a>
 						<a class="dragsort-item-selector"></a>
 						<div class="dragsort-item-container mr10">
 							<p><?php echo $q['question']?></p>
 							<p class="mt5">
 								<span><?php switch($q['type']){
-									case ExamQuestions::TYPE_SINGLE_ANSWER:
+									case ExamQuestionsTable::TYPE_SINGLE_ANSWER:
 										echo '单选题';
 										break;
-									case ExamQuestions::TYPE_MULTIPLE_ANSWERS:
+									case ExamQuestionsTable::TYPE_MULTIPLE_ANSWERS:
 										echo '多选题';
 										break;
-									case ExamQuestions::TYPE_INPUT:
+									case ExamQuestionsTable::TYPE_INPUT:
 										echo '输入题';
 										break;
-									case ExamQuestions::TYPE_TRUE_OR_FALSE:
+									case ExamQuestionsTable::TYPE_TRUE_OR_FALSE:
 										echo '判断题';
 										break;
 								}?></span>
 								|
-								<label>分值：<?php echo Html::inputText('score[]', $q['score'], array(
+								<label>分值：<?php echo HtmlHelper::inputText('score[]', $q['score'], array(
 									'class'=>'form-control mw100 ib',
 								))?></label>
 							</p>

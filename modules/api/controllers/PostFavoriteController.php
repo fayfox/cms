@@ -2,9 +2,9 @@
 namespace cms\modules\api\controllers;
 
 use cms\library\UserController;
-use fay\services\post\Favorite as PostFavorite;
+use fay\services\post\PostFavoriteService;
 use fay\core\Response;
-use fay\services\Post;
+use fay\services\PostService;
 use fay\helpers\FieldHelper;
 
 /**
@@ -30,21 +30,21 @@ class PostFavoriteController extends UserController{
 		
 		$post_id = $this->form()->getData('post_id');
 		
-		if(!Post::isPostIdExist($post_id)){
+		if(!PostService::isPostIdExist($post_id)){
 			Response::notify('error', array(
 				'message'=>'文章ID不存在',
 				'code'=>'invalid-parameter:post_id-is-not-exist',
 			));
 		}
 		
-		if(PostFavorite::isFavorited($post_id)){
+		if(PostFavoriteService::isFavorited($post_id)){
 			Response::notify('error', array(
 				'message'=>'您已收藏过该文章',
 				'code'=>'already-favorited',
 			));
 		}
 		
-		PostFavorite::add($post_id, $this->form()->getData('trackid', ''));
+		PostFavoriteService::add($post_id, $this->form()->getData('trackid', ''));
 		
 		Response::notify('success', '收藏成功');
 	}
@@ -66,14 +66,14 @@ class PostFavoriteController extends UserController{
 		
 		$post_id = $this->form()->getData('post_id');
 		
-		if(!PostFavorite::isFavorited($post_id)){
+		if(!PostFavoriteService::isFavorited($post_id)){
 			Response::notify('error', array(
 				'message'=>'您未收藏过该文章',
 				'code'=>'not-favorited',
 			));
 		}
 		
-		PostFavorite::remove($post_id);
+		PostFavoriteService::remove($post_id);
 		
 		Response::notify('success', '移除收藏成功');
 	}
@@ -102,12 +102,12 @@ class PostFavoriteController extends UserController{
 		$fields = $this->form()->getData('fields');
 		if($fields){
 			//过滤字段，移除那些不允许的字段
-			$fields = FieldHelper::parse($fields, 'post', Post::$public_fields);
+			$fields = FieldHelper::parse($fields, 'post', PostService::$public_fields);
 		}else{
-			$fields = Post::$default_fields;
+			$fields = PostService::$default_fields;
 		}
 		
-		$favorites = PostFavorite::service()->getList($fields,
+		$favorites = PostFavoriteService::service()->getList($fields,
 			$this->form()->getData('page', 1),
 			$this->form()->getData('page_size', 20));
 		Response::json($favorites);

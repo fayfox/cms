@@ -1,10 +1,10 @@
 <?php
 use cms\helpers\FeedHelper;
-use fay\helpers\Html;
-use fay\models\tables\Feeds;
-use fay\services\User;
-use fay\services\File;
-use fay\helpers\Date;
+use fay\helpers\HtmlHelper;
+use fay\models\tables\FeedsTable;
+use fay\services\UserService;
+use fay\services\FileService;
+use fay\helpers\DateHelper;
 
 $enabled_boxes = F::form('setting')->getData('enabled_boxes');
 $boxes_cp = $enabled_boxes;//复制一份出来，因为后面会不停的被unset
@@ -14,7 +14,7 @@ $boxes_cp = $enabled_boxes;//复制一份出来，因为后面会不停的被uns
 	<div class="post-body">
 		<div class="post-body-content">
 			<div class="mb30 cf user-info"><?php
-				$user = User::service()->get($feed['user_id'], 'nickname,id,avatar,admin,roles.title');
+				$user = UserService::service()->get($feed['user_id'], 'nickname,id,avatar,admin,roles.title');
 				
 				$user_detail_link = $user['user']['admin'] ? array('admin/operator/item', array(
 					'id'=>$user['user']['id'],
@@ -22,34 +22,34 @@ $boxes_cp = $enabled_boxes;//复制一份出来，因为后面会不停的被uns
 					'id'=>$user['user']['id'],
 				));
 				//头像
-				echo Html::link(Html::img($user['user']['avatar']['thumbnail'], File::PIC_THUMBNAIL, array(
+				echo HtmlHelper::link(HtmlHelper::img($user['user']['avatar']['thumbnail'], FileService::PIC_THUMBNAIL, array(
 					'spare'=>'avatar',
 				)), $user_detail_link, array(
 					'encode'=>false,
-					'title'=>Html::encode($user['user']['nickname']),
+					'title'=>HtmlHelper::encode($user['user']['nickname']),
 					'class'=>'user-avatar',
 				));
 			?>
 				<div class="user-details">
 					<p><?php
 						//昵称
-						echo Html::link($user['user']['nickname'], $user_detail_link, array(
+						echo HtmlHelper::link($user['user']['nickname'], $user_detail_link, array(
 							'class'=>'user-nickname',
 						));
 						
 						//角色
 						foreach($user['roles'] as $r){
-							echo Html::tag('sup', array(
+							echo HtmlHelper::tag('sup', array(
 								'class'=>'bg-yellow title-sup ml5',
-							), Html::encode($r['title']));
+							), HtmlHelper::encode($r['title']));
 						}
 					?></p>
 					<p class="feed-meta">
 						<span>创建于：<?php
-							echo Html::tag('time', array(), Date::niceShort($feed['create_time']));
+							echo HtmlHelper::tag('time', array(), DateHelper::niceShort($feed['create_time']));
 						?></span>
 						<span class="pl11">最近更新于：<?php
-							echo Html::tag('time', array(), Date::niceShort($feed['last_modified_time']));
+							echo HtmlHelper::tag('time', array(), DateHelper::niceShort($feed['last_modified_time']));
 						?></span>
 					</p>
 					<p class="feed-interaction">
@@ -93,20 +93,20 @@ $boxes_cp = $enabled_boxes;//复制一份出来，因为后面会不停的被uns
 						<a href="javascript:;" id="edit-status-link" class="ml5">编辑</a>
 						<?php echo F::form()->inputHidden('status')?>
 						<div class="hide" id="edit-status-container"><?php
-							echo Html::select('', array(
-								Feeds::STATUS_DRAFT => '草稿',
-								Feeds::STATUS_PENDING => '待审核',
-								Feeds::STATUS_APPROVED => '通过审核',
-								Feeds::STATUS_UNAPPROVED => '未通过审核',
+							echo HtmlHelper::select('', array(
+								FeedsTable::STATUS_DRAFT => '草稿',
+								FeedsTable::STATUS_PENDING => '待审核',
+								FeedsTable::STATUS_APPROVED => '通过审核',
+								FeedsTable::STATUS_UNAPPROVED => '未通过审核',
 							), F::form()->getData('status'), array(
 								'class'=>'form-control mw110 mt5 ib',
 								'id'=>'edit-status-selector'
 							));
-							echo Html::link('确定', 'javascript:;', array(
+							echo HtmlHelper::link('确定', 'javascript:;', array(
 								'class'=>'btn btn-grey btn-sm ml5',
 								'id'=>'set-status-editing',
 							));
-							echo Html::link('取消', 'javascript:;', array(
+							echo HtmlHelper::link('取消', 'javascript:;', array(
 								'class'=>'ml5',
 								'id'=>'cancel-status-editing',
 							));
@@ -125,9 +125,9 @@ $boxes_cp = $enabled_boxes;//复制一份出来，因为后面会不停的被uns
 						$k = array_search($box, $boxes_cp);
 						if($k !== false){
 							if(isset(F::app()->boxes[$k]['view'])){
-								$this->renderPartial(F::app()->boxes[$k]['view']);
+								$this->renderPartial(F::app()->boxes[$k]['view'], $this->getViewData());
 							}else{
-								$this->renderPartial('_box_'.$box);
+								$this->renderPartial('_box_'.$box, $this->getViewData());
 							}
 							unset($boxes_cp[$k]);
 						}
@@ -141,9 +141,9 @@ $boxes_cp = $enabled_boxes;//复制一份出来，因为后面会不停的被uns
 					$k = array_search($box, $boxes_cp);
 					if($k !== false){
 						if(isset(F::app()->boxes[$k]['view'])){
-							$this->renderPartial(F::app()->boxes[$k]['view']);
+							$this->renderPartial(F::app()->boxes[$k]['view'], $this->getViewData());
 						}else{
-							$this->renderPartial('_box_'.$box);
+							$this->renderPartial('_box_'.$box, $this->getViewData());
 						}
 						unset($boxes_cp[$k]);
 					}
@@ -153,9 +153,9 @@ $boxes_cp = $enabled_boxes;//复制一份出来，因为后面会不停的被uns
 			//最后多出来的都放最后面
 			foreach($boxes_cp as $box){
 				if(isset(F::app()->boxes[$k]['view'])){
-					$this->renderPartial(F::app()->boxes[$k]['view']);
+					$this->renderPartial(F::app()->boxes[$k]['view'], $this->getViewData());
 				}else{
-					$this->renderPartial('_box_'.$box);
+					$this->renderPartial('_box_'.$box, $this->getViewData());
 				}
 			}
 		?></div>

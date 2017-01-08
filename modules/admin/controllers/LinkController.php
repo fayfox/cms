@@ -2,12 +2,12 @@
 namespace cms\modules\admin\controllers;
 
 use cms\library\AdminController;
-use fay\models\tables\Links;
-use fay\models\tables\Actionlogs;
+use fay\models\tables\LinksTable;
+use fay\models\tables\ActionlogsTable;
 use fay\core\Sql;
 use fay\common\ListView;
 use fay\core\Response;
-use fay\services\Category;
+use fay\services\CategoryService;
 
 class LinkController extends AdminController{
 	public function __construct(){
@@ -18,19 +18,19 @@ class LinkController extends AdminController{
 	public function create(){
 		$this->layout->subtitle = '添加链接';
 		
-		$this->form()->setModel(Links::model());
+		$this->form()->setModel(LinksTable::model());
 		if($this->input->post() && $this->form()->check()){
 			$data = $this->form()->getFilteredData();
 			isset($data['visible']) || $data['visible'] = 1;
 			$data['create_time'] = $this->current_time;
 			$data['user_id'] = $this->current_user;
 			$data['last_modified_time'] = $this->current_time;
-			$link_id = Links::model()->insert($data);
-			$this->actionlog(Actionlogs::TYPE_LINK, '添加友情链接', $link_id);
+			$link_id = LinksTable::model()->insert($data);
+			$this->actionlog(ActionlogsTable::TYPE_LINK, '添加友情链接', $link_id);
 			Response::notify('success', '链接添加成功', array('admin/link/edit', array('id'=>$link_id)));
 		}
 		
-		$this->view->cats = Category::service()->getTree('_system_link');
+		$this->view->cats = CategoryService::service()->getTree('_system_link');
 		$this->view->render();
 	}
 	
@@ -42,7 +42,7 @@ class LinkController extends AdminController{
 			'text'=>'添加链接',
 		);
 		
-		$this->form()->setModel(Links::model());
+		$this->form()->setModel(LinksTable::model());
 		$id = $this->input->get('id', 'intval');
 		
 		if($this->input->post()){
@@ -51,12 +51,12 @@ class LinkController extends AdminController{
 				isset($data['visible']) || $data['visible'] = 1;
 				$data['visible'] = $this->input->post('visible', 'intval', 1);
 				$data['last_modified_time'] = $this->current_time;
-				Links::model()->update($data, array('id = ?'=>$id));
-				$this->actionlog(Actionlogs::TYPE_LINK, '编辑友情链接', $id);
+				LinksTable::model()->update($data, array('id = ?'=>$id));
+				$this->actionlog(ActionlogsTable::TYPE_LINK, '编辑友情链接', $id);
 				Response::notify('success', '一个链接被编辑', false);
 			}
 		}
-		if($link = Links::model()->find($id)){
+		if($link = LinksTable::model()->find($id)){
 			$this->form()->setData($link);
 			
 			$this->layout->sublink = array(
@@ -66,16 +66,16 @@ class LinkController extends AdminController{
 				'text'=>'同分类下新增链接',
 			);
 			
-			$this->view->cats = Category::service()->getTree('_system_link');
+			$this->view->cats = CategoryService::service()->getTree('_system_link');
 			$this->view->render();
 		}
 	}
 	
 	public function index(){
 		//搜索条件验证，异常数据直接返回404
-		$this->form()->setScene('final')->setRules(array(
+		$this->form('search')->setScene('final')->setRules(array(
 			array('orderby', 'range', array(
-				'range'=>Links::model()->getFields(),
+				'range'=>LinksTable::model()->getFields(),
 			)),
 			array('order', 'range', array(
 				'range'=>array('asc', 'desc'),
@@ -126,32 +126,34 @@ class LinkController extends AdminController{
 		));
 		$this->view->listview = $listview;
 		
-		$this->view->cats = Category::service()->getTree('_system_link');
+		$this->view->cats = CategoryService::service()->getTree('_system_link');
 		
 		$this->view->render();
 	}
 	
 	public function remove(){
-		Links::model()->delete(array('id = ?'=>$this->input->get('id', 'intval')));
+		LinksTable::model()->delete(array('id = ?'=>$this->input->get('id', 'intval')));
 		
-		$this->actionlog(Actionlogs::TYPE_LINK, '移除友情链接', $this->input->get('id', 'intval'));
+		$this->actionlog(ActionlogsTable::TYPE_LINK, '移除友情链接', $this->input->get('id', 'intval'));
 		
 		Response::notify('success', '一个友情链接被永久删除', array('admin/link/index', $this->input->get()));
 	}
 	
 	public function sort(){
 		$id = $this->input->get('id', 'intval');
-		Links::model()->update(array(
+		LinksTable::model()->update(array(
 			'sort'=>$this->input->get('sort', 'intval'),
 		), array(
 			'id = ?'=>$id,
 		));
-		$this->actionlog(Actionlogs::TYPE_LINK, '改变了友情链接排序', $id);
+		$this->actionlog(ActionlogsTable::TYPE_LINK, '改变了友情链接排序', $id);
 		
-		$link = Links::model()->find($id, 'sort');
+		$link = LinksTable::model()->find($id, 'sort');
 		Response::notify('success', array(
 			'message'=>'改变了友情链接排序值',
-			'sort'=>$link['sort'],
+			'data'=>array(
+				'sort'=>$link['sort'],
+			),
 		));
 	}
 	
@@ -162,8 +164,8 @@ class LinkController extends AdminController{
 		$this->layout->current_directory = 'link';
 	
 		$this->layout->subtitle = '友情链接分类';
-		$this->view->cats = Category::service()->getTree('_system_link');
-		$root_node = Category::service()->getByAlias('_system_link', 'id');
+		$this->view->cats = CategoryService::service()->getTree('_system_link');
+		$root_node = CategoryService::service()->getByAlias('_system_link', 'id');
 		$this->view->root = $root_node['id'];
 		
 		if($this->checkPermission('admin/link/cat-create')){

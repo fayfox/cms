@@ -1,7 +1,12 @@
 <?php
 use cms\helpers\ListTableHelper;
-use fay\helpers\Html;
-use fay\models\tables\Logs;
+use fay\helpers\HtmlHelper;
+use fay\models\tables\LogsTable;
+
+/**
+ * @var $iplocation \IpLocation
+ * @var $listview \fay\common\ListView
+ */
 ?>
 <div class="row">
 	<div class="col-7">
@@ -15,9 +20,9 @@ use fay\models\tables\Logs;
 				|
 				<?php echo F::form('search')->select('type', array(
 					''=>'--类型--',
-					Logs::TYPE_NORMAL=>'正常',
-					Logs::TYPE_ERROR=>'错误',
-					Logs::TYPE_WARMING=>'警告',
+					LogsTable::TYPE_NORMAL=>'正常',
+					LogsTable::TYPE_ERROR=>'错误',
+					LogsTable::TYPE_WARMING=>'警告',
 				), array(
 					'class'=>'form-control',
 				))?>
@@ -53,7 +58,9 @@ use fay\models\tables\Logs;
 				</tr>
 			</tfoot>
 			<tbody>
-				<?php $listview->showData()?>
+				<?php $listview->showData(array(
+					'iplocation'=>$iplocation,
+				))?>
 			</tbody>
 		</table>
 	</div>
@@ -70,14 +77,14 @@ use fay\models\tables\Logs;
 			<table class="form-table">
 				<tr>
 					<th class="adaption">Code</th>
-					<td><?php echo Html::inputText('', '', array(
+					<td><?php echo HtmlHelper::inputText('', '', array(
 						'class'=>'form-control',
 						'id'=>'ld-code',
 					))?></td>
 				</tr>
 				<tr>
 					<th valign="top" class="adaption">Data</th>
-					<td><?php echo Html::textarea('', '', array(
+					<td><?php echo HtmlHelper::textarea('', '', array(
 						'class'=>'form-control h90 autosize',
 						'rows'=>5,
 						'id'=>'ld-data',
@@ -86,7 +93,7 @@ use fay\models\tables\Logs;
 				<tr>
 					<th class="adaption">Create Time</th>
 					<td>
-						<?php echo Html::inputText('', '', array(
+						<?php echo HtmlHelper::inputText('', '', array(
 							'class'=>'form-control',
 							'id'=>'ld-create_time',
 						))?>
@@ -95,7 +102,7 @@ use fay\models\tables\Logs;
 				<tr>
 					<th class="adaption">User</th>
 					<td>
-						<?php echo Html::inputText('', '', array(
+						<?php echo HtmlHelper::inputText('', '', array(
 							'class'=>'form-control',
 							'id'=>'ld-username',
 						))?>
@@ -104,7 +111,7 @@ use fay\models\tables\Logs;
 				<tr>
 					<th class="adaption">User Agent</th>
 					<td>
-						<?php echo Html::textarea('', '', array(
+						<?php echo HtmlHelper::textarea('', '', array(
 							'class'=>'form-control autosize',
 							'id'=>'ld-user_agent',
 						))?>
