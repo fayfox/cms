@@ -10,6 +10,7 @@ use fay\core\Validator;
 use fay\core\HttpException;
 use fay\helpers\StringHelper;
 use fay\services\OptionService;
+use PHPQRCode\QRcode;
 
 /**
  * 文件
@@ -31,6 +32,9 @@ class FileController extends ApiController{
 	 * @parameter int $dh 当$t=3或$t=4时候，图片输出高度（原图尺寸不足时会被拉伸）
 	 */
 	public function pic(){
+		//验证必须get方式发起请求
+		$this->checkMethod('GET');
+		
 		$validator = new Validator();
 		$check = $validator->check(array(
 			array(array('f'), 'required'),
@@ -271,7 +275,7 @@ class FileController extends ApiController{
 	 * @parameter string $data 二维码内容，经base64编码后的字符串
 	 */
 	public function qrcode(){
-		\PHPQRCode\QRcode::png(base64_decode($this->input->get('data')), false, 'L', 4, 2);
+		QRcode::png(base64_decode($this->input->get('data')), false, 'L', 4, 2);
 	}
 	
 	/**
