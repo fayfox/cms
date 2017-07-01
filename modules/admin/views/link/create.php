@@ -1,9 +1,10 @@
-<form id="form" action="" method="post" class="validform">
-	<?php $this->renderPartial('_edit_panel', array(
-		'cats'=>$cats,
-	))?>
-	<div class="form-field">
-		<a href="javascript:;" class="btn" id="form-submit">添加链接</a>
-	</div>
-</form>
-<?php $this->renderPartial('_js')?>
+<?php echo F::form()->open()?>
+    <?php $this->renderPartial('_edit_panel', array(
+        'cats'=>$cats,
+    ))?>
+    <div class="form-field">
+        <?php echo F::form()->submitLink('添加链接', array(
+            'class'=>'btn',
+        ));?>
+    </div>
+<?php echo F::form()->close()?>
