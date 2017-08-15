@@ -13,13 +13,13 @@ class AdminController extends Widget{
     }
     
     public function index(){
-        $root_node = CategoryService::service()->getByAlias('_system_post', 'id');
-        $this->view->assign(array(
+        $root_node = CategoryService::service()->get('_system_post', 'id');
+        return $this->view->assign(array(
             'cats'=>array(
                 array(
                     'id'=>0,
                     'title'=>'不限制',
-                    'children'=>CategoryService::service()->getTreeByParentId($root_node['id']),
+                    'children'=>CategoryService::service()->getTree($root_node['id']),
                 ),
             ),
         ))->render();

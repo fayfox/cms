@@ -31,7 +31,7 @@ class CategoryController extends AdminController{
                 'data-id'=>0,
             ),
         );
-        $this->view->render();
+        return $this->view->render();
     }
     
     public function create(){
@@ -41,7 +41,7 @@ class CategoryController extends AdminController{
                 $data = $this->form()->getFilteredData();
                 empty($data['is_nav']) && $data['is_nav'] = 0;
                 empty($data['file_id']) && $data['file_id'] = 0;
-                empty($data['alias']) && $data['alias'] = $this->getCatAlias($data['title']);
+                empty($data['alias']) && $data['alias'] = $this->generateCatAlias($data['title']);
                 
                 $parent = $this->input->post('parent', 'intval', 0);
                 $sort = $this->input->post('sort', 'intval', 1000);
@@ -70,7 +70,7 @@ class CategoryController extends AdminController{
      * @param int $dep
      * @return string
      */
-    private function getCatAlias($title = '', $spelling = null, $dep = 0){
+    private function generateCatAlias($title = '', $spelling = null, $dep = 0){
         if(!$spelling){
             if($title){
                 if(preg_match('/[^\x00-\x80]/', $title)){//如果包含中文，将中文转成拼音
@@ -94,7 +94,7 @@ class CategoryController extends AdminController{
         $alias = $dep ? $spelling.'-'.$dep : $spelling;
         $cat = CategoriesTable::model()->fetchRow(array('alias = ?'=>$alias), 'id');
         if($cat){
-            return $this->getCatAlias('', $spelling, $dep + 1);
+            return $this->generateCatAlias('', $spelling, $dep + 1);
         }else{
             return $alias;
         }
@@ -108,8 +108,8 @@ class CategoryController extends AdminController{
                 empty($data['is_nav']) && $data['is_nav'] = 0;
                 empty($data['file_id']) && $data['file_id'] = 0;
                 
-                $parent = $this->input->post('parent', 'intval', null);
-                $sort = $this->input->post('sort', 'intval', null);
+                $parent = $this->input->post('parent', 'intval');
+                $sort = $this->input->post('sort', 'intval');
                 
                 CategoryService::service()->update($cat_id, $data, $sort, $parent);
                 
@@ -162,7 +162,7 @@ class CategoryController extends AdminController{
             'right_value < '.$cat['right_value'],
         ));
         
-        Response::json(array(
+        return Response::json(array(
             'cat'=>$cat,
             'children'=>$children,
         ));
@@ -194,15 +194,18 @@ class CategoryController extends AdminController{
             ),
         ));
     }
-    
+
+    /**
+     * 判断指定别名是否可用
+     */
     public function isAliasNotExist(){
-        if(CategoriesTable::model()->fetchRow(array(
+        if(CategoriesTable::model()->has(array(
             'alias = ?'=>$this->input->request('alias', 'trim'),
-            'id != ?'=>$this->input->get('id', 'intval', false),
+            'id != ?'=>$this->input->request('id', 'intval', false),
         ))){
-            Response::json('', 0, '别名已存在');
+            return Response::json('', 0, '别名已存在');
         }else{
-            Response::json('', 1, '别名不存在');
+            return Response::json('', 1, '别名不存在');
         }
     }
 }

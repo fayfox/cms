@@ -17,12 +17,12 @@ class InputController extends ToolsController{
             'uri'=>array('cms/tools/input/clearsession'),
             'text'=>'清除SESSION',
         );
-        $this->view->render();
+        return $this->view->render();
     }
     
     public function cookie(){
         $this->layout->subtitle = 'COOKIE';
-        $this->view->render();
+        return $this->view->render();
     }
     
     public function server(){
@@ -30,30 +30,30 @@ class InputController extends ToolsController{
         $this->isLogin();
         
         $this->layout->subtitle = 'SERVER';
-        $this->view->render();
+        return $this->view->render();
     }
     
     public function get(){
         $this->layout->subtitle = 'GET';
         if($this->input->isAjaxRequest()){
-            Response::json(array(
+            return Response::json(array(
                 'F::input()->get()'=>$this->input->get(),
                 '$_GET'=>$_GET,
             ));
         }
-        $this->view->render();
+        return $this->view->render();
     }
     
     public function post(){
         $this->layout->subtitle = 'POST';
         if($this->input->isAjaxRequest()){
-            Response::json(array(
+            return Response::json(array(
                 'F::input()->post()'=>$this->input->post(),
                 '$_POST'=>$_POST,
                 'php://input'=>file_get_contents('php://input', 'r'),
             ));
         }
-        $this->view->render();
+        return $this->view->render();
     }
     
     public function clearsession(){

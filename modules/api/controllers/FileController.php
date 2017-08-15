@@ -6,9 +6,10 @@ use cms\models\tables\FilesTable;
 use cms\services\CaptchaService;
 use cms\services\file\FileService;
 use cms\services\file\ImageService;
-use fay\core\HttpException;
+use fay\exceptions\NotFoundHttpException;
+use fay\exceptions\ValidationException;
 use fay\core\Validator;
-use fay\helpers\StringHelper;
+use fay\helpers\NumberHelper;
 use PHPQRCode\QRcode;
 
 /**
@@ -23,6 +24,7 @@ class FileController extends ApiController{
      *  - 2: 缩略图
      *  - 3: 裁剪图
      *  - 4: 缩放图
+     *  - 5：切割
      * @parameter int $x 当$t=3时，裁剪起始x坐标点
      * @parameter int $y 当$t=3时，裁剪起始y坐标点
      * @parameter int $w 当$t=3时，裁剪宽度
@@ -60,7 +62,7 @@ class FileController extends ApiController{
         
         //文件名或文件id号
         $f = $this->input->get('f');
-        if(StringHelper::isInt($f)){
+        if(NumberHelper::isInt($f)){
             if($f == 0){
                 //这里不直接返回图片不存在的提示，因为可能需要缩放，让后面的逻辑去处理
                 $file = false;
@@ -135,7 +137,7 @@ class FileController extends ApiController{
         if($file !== false){
             //出于性能考虑，这里不会去判断物理文件是否存在（除非服务器挂了，否则肯定存在）
             header('Content-type: '.$file['file_type']);
-            readfile((defined('NO_REWRITE') ? './public/' : '').$file['file_path'].$file['raw_name'].$file['file_ext']);
+            readfile(FileService::getPath($file));
         }else{
             $spare = $this->config->get($this->input->get('s', 'trim', 'default'), 'noimage');
             $spare || $spare = $this->config->get('default', 'noimage');
@@ -147,7 +149,7 @@ class FileController extends ApiController{
     private function _thumbnail($file){
         if($file !== false){
             header('Content-type: '.$file['file_type']);
-            readfile((defined('NO_REWRITE') ? './public/' : '').$file['file_path'].$file['raw_name'].'-100x100' . $file['file_ext']);
+            readfile(FileService::getThumbnailPath($file));
         }else{
             $spare = $this->config->get($this->input->get('s', 'trim', 'thumbnail'), 'noimage');
             $spare || $spare = $this->config->get('thumbnail', 'noimage');
@@ -166,7 +168,7 @@ class FileController extends ApiController{
         //选中部分的高度
         $h = $this->input->get('h', 'intval');
         if(!$w || !$h){
-            throw new HttpException('不完整的请求', 500);
+            throw new ValidationException('不完整的请求');
         }
         //输出宽度
         $dw = $this->input->get('dw', 'intval', $w);
@@ -273,7 +275,7 @@ class FileController extends ApiController{
             if($file = FilesTable::model()->find($file_id)){
                 if(substr((defined('NO_REWRITE') ? './public/' : '').$file['file_path'], 0, 4) == './..'){
                     //私有文件不允许在此方法下载
-                    throw new HttpException('文件不存在');
+                    throw new NotFoundHttpException('文件不存在');
                 }
                 
                 //可选下载文件名格式
@@ -288,7 +290,7 @@ class FileController extends ApiController{
                 }
                 
                 FilesTable::model()->incr($file_id, 'downloads', 1);
-                $data = file_get_contents((defined('NO_REWRITE') ? './public/' : '').$file['file_path'].$file['raw_name'].$file['file_ext']);
+                $data = file_get_contents(FileService::getPath($file));
                 if (strpos($_SERVER['HTTP_USER_AGENT'], "MSIE") !== FALSE){
                     header('Content-Type: "'.$file['file_type'].'"');
                     header('Content-Disposition: attachment; filename="'.$filename.'"');
@@ -307,10 +309,10 @@ class FileController extends ApiController{
                 }
                 die($data);
             }else{
-                throw new HttpException('文件不存在');
+                throw new NotFoundHttpException('文件不存在');
             }
         }else{
-            throw new HttpException('参数不正确', 500);
+            throw new ValidationException('参数不正确');
         }
     }
 }

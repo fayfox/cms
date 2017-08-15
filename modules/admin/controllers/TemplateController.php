@@ -24,7 +24,7 @@ class TemplateController extends AdminController{
         ;
         $this->view->listview = new ListView($sql);
         
-        $this->view->render();
+        return $this->view->render();
     }
     
     public function delete(){
@@ -77,7 +77,7 @@ class TemplateController extends AdminController{
         
         $this->view->template = TemplatesTable::model()->find($id);
         $this->form()->setData($this->view->template);
-        $this->view->render();
+        return $this->view->render();
     }
     
     public function create(){
@@ -103,17 +103,17 @@ class TemplateController extends AdminController{
             )));
         }
         
-        $this->view->render();
+        return $this->view->render();
     }
     
     public function isAliasNotExist(){
-        if(TemplatesTable::model()->fetchRow(array(
+        if(TemplatesTable::model()->has(array(
             'alias = ?'=>$this->input->request('alias', 'trim'),
             'id != ?'=>$this->input->request('id', 'intval', false),
         ))){
-            Response::json('', 0, '别名已存在');
+            return Response::json('', 0, '别名已存在');
         }else{
-            Response::json();
+            return Response::json();
         }
     }
     

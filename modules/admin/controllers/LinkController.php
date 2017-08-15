@@ -3,6 +3,7 @@ namespace cms\modules\admin\controllers;
 
 use cms\library\AdminController;
 use cms\models\tables\ActionlogsTable;
+use cms\models\tables\CategoriesTable;
 use cms\models\tables\LinksTable;
 use cms\services\CategoryService;
 use fay\common\ListView;
@@ -32,7 +33,7 @@ class LinkController extends AdminController{
         }
         
         $this->view->cats = CategoryService::service()->getTree('_system_link');
-        $this->view->render();
+        return $this->view->render();
     }
     
     public function edit(){
@@ -67,7 +68,7 @@ class LinkController extends AdminController{
             );
             
             $this->view->cats = CategoryService::service()->getTree('_system_link');
-            $this->view->render();
+            return $this->view->render();
         }
     }
     
@@ -128,7 +129,7 @@ class LinkController extends AdminController{
         
         $this->view->cats = CategoryService::service()->getTree('_system_link');
         
-        $this->view->render();
+        return $this->view->render();
     }
     
     public function remove(){
@@ -165,8 +166,11 @@ class LinkController extends AdminController{
     
         $this->layout->subtitle = '友情链接分类';
         $this->view->cats = CategoryService::service()->getTree('_system_link');
-        $root_node = CategoryService::service()->getByAlias('_system_link', 'id');
+        $root_node = CategoryService::service()->get('_system_link', 'id');
         $this->view->root = $root_node['id'];
+
+        \F::form('create')->setModel(CategoriesTable::model());
+        \F::form('edit')->setModel(CategoriesTable::model());
         
         if($this->checkPermission('cms/admin/link/cat-create')){
             $this->layout->sublink = array(
@@ -180,6 +184,6 @@ class LinkController extends AdminController{
             );
         }
         
-        $this->view->render();
+        return $this->view->render();
     }
 }

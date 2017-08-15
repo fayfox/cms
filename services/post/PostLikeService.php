@@ -10,7 +10,6 @@ use fay\core\Loader;
 use fay\core\Service;
 use fay\core\Sql;
 use fay\helpers\ArrayHelper;
-use fay\helpers\RequestHelper;
 
 class PostLikeService extends Service{
     /**
@@ -36,18 +35,17 @@ class PostLikeService extends Service{
      * @param string $trackid
      * @param int $user_id 用户ID，默认为当前登录用户
      * @param bool|int $sockpuppet 马甲信息
-     * @throws PostErrorException
      * @throws PostException
      */
     public static function add($post_id, $trackid = '', $user_id = null, $sockpuppet = 0){
-        $user_id = UserService::getUserId($user_id);
+        $user_id = UserService::makeUserID($user_id);
         
         if(!PostService::isPostIdExist($post_id)){
-            throw new PostErrorException('文章ID不存在', 'invalid-parameter:post_id-not-exist');
+            throw new PostNotExistException($post_id);
         }
         
         if(self::isLiked($post_id, $user_id)){
-            throw new PostException('已赞过，不能重复点赞', 'already-liked');
+            throw new PostException('已赞过，不能重复点赞');
         }
         
         PostLikesTable::model()->insert(array(
@@ -56,7 +54,7 @@ class PostLikeService extends Service{
             'trackid'=>$trackid,
             'sockpuppet'=>$sockpuppet,
             'create_time'=>\F::app()->current_time,
-            'ip_int'=>RequestHelper::ip2int(\F::app()->ip),
+            'ip_int'=>\F::app()->ip_int,
         ));
         
         //文章点赞数+1
@@ -77,13 +75,9 @@ class PostLikeService extends Service{
      * @param int $post_id 文章ID
      * @param int $user_id 用户ID，默认为当前登录用户
      * @return bool
-     * @throws PostErrorException
      */
     public static function remove($post_id, $user_id = null){
-        $user_id || $user_id = \F::app()->current_user;
-        if(!$user_id){
-            throw new PostErrorException('未能获取到用户ID', 'can-not-find-a-effective-user-id');
-        }
+        $user_id = UserService::makeUserID($user_id);
         
         $like = PostLikesTable::model()->fetchRow(array(
             'user_id = ?'=>$user_id,
@@ -119,13 +113,9 @@ class PostLikeService extends Service{
      * @param int $post_id 文章ID
      * @param int $user_id 用户ID，默认为当前登录用户
      * @return bool
-     * @throws PostErrorException
      */
     public static function isLiked($post_id, $user_id = null){
-        $user_id || $user_id = \F::app()->current_user;
-        if(!$user_id){
-            throw new PostErrorException('未能获取到用户ID', 'can-not-find-a-effective-user-id');
-        }
+        $user_id = UserService::makeUserID($user_id);
         
         return !!PostLikesTable::model()->fetchRow(array(
             'user_id = ?'=>$user_id,
@@ -138,13 +128,9 @@ class PostLikeService extends Service{
      * @param array $post_ids 由文章ID组成的一维数组
      * @param int $user_id 用户ID，默认为当前登录用户
      * @return array
-     * @throws PostErrorException
      */
     public static function mIsLiked($post_ids, $user_id = null){
-        $user_id || $user_id = \F::app()->current_user;
-        if(!$user_id){
-            throw new PostErrorException('未能获取到用户ID', 'can-not-find-a-effective-user-id');
-        }
+        $user_id = UserService::makeUserID($user_id);
         
         if(!is_array($post_ids)){
             $post_ids = explode(',', str_replace(' ', '', $post_ids));
@@ -206,10 +192,9 @@ class PostLikeService extends Service{
      * @param int $page_size
      * @param int $user_id 用户ID，默认为当前登录用户
      * @return array
-     * @throws PostErrorException
      */
     public function getUserLikes($fields, $page = 1, $page_size = 20, $user_id = null){
-        $user_id = UserService::getUserId($user_id);
+        $user_id = UserService::makeUserID($user_id);
         
         $sql = new Sql();
         $sql->from(array('pl'=>'post_likes'), 'post_id')

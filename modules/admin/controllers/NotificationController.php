@@ -3,6 +3,7 @@ namespace cms\modules\admin\controllers;
 
 use cms\library\AdminController;
 use cms\models\tables\ActionlogsTable;
+use cms\models\tables\CategoriesTable;
 use cms\models\tables\RolesTable;
 use cms\models\tables\UserProfileTable;
 use cms\models\tables\UsersNotificationsTable;
@@ -34,7 +35,7 @@ class NotificationController extends AdminController{
         }
         $this->view->notification_cats = CategoryService::service()->getNextLevel('_system_notification');
         $this->view->roles = RolesTable::model()->fetchAll('delete_time = 0');
-        $this->view->render();
+        return $this->view->render();
     }
     
     public function my(){
@@ -57,7 +58,7 @@ class NotificationController extends AdminController{
             'empty_text'=>'<tr><td colspan="4" align="center">无相关记录！</td></tr>',
         ));
         
-        $this->view->render();
+        return $this->view->render();
     }
     
     public function delete(){
@@ -129,8 +130,11 @@ class NotificationController extends AdminController{
     public function cat(){
         $this->layout->subtitle = '消息分类';
         $this->view->cats = CategoryService::service()->getTree('_system_notification');
-        $root_node = CategoryService::service()->getByAlias('_system_notification', 'id');
+        $root_node = CategoryService::service()->get('_system_notification', 'id');
         $this->view->root = $root_node['id'];
+
+        \F::form('create')->setModel(CategoriesTable::model());
+        \F::form('edit')->setModel(CategoriesTable::model());
     
         if($this->checkPermission('cms/admin/notification/cat-create')){
             $this->layout->sublink = array(
@@ -144,7 +148,7 @@ class NotificationController extends AdminController{
             );
         }
     
-        $this->view->render();
+        return $this->view->render();
     }
     
     public function setRead(){

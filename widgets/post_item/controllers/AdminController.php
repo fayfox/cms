@@ -27,16 +27,16 @@ class AdminController extends Widget{
     
     public function index(){
         //所有分类
-        $root_node = CategoryService::service()->getByAlias('_system_post', 'id');
+        $root_node = CategoryService::service()->get('_system_post', 'id');
         $this->view->cats = array(
             array(
                 'id'=>$root_node['id'],
                 'title'=>'顶级',
-                'children'=>CategoryService::service()->getTreeByParentId($root_node['id']),
+                'children'=>CategoryService::service()->getTree($root_node['id']),
             ),
         );
         
-        $this->view->render();
+        return $this->view->render();
     }
     
     /**

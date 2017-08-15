@@ -3,7 +3,7 @@ use cms\services\OptionService;
 use fay\helpers\HtmlHelper;
 
 ?>
-<form id="options-form" class="site-settings-form" action="<?php echo $this->url('cms/admin/site/set-options')?>">
+<form id="options-form" class="ajax-form" action="<?php echo $this->url('cms/admin/option/set')?>">
     <div class="row">
         <div class="col-6">
             <div class="form-field">
@@ -72,7 +72,7 @@ use fay\helpers\HtmlHelper;
             </div>
             <div class="form-field">
                 <label class="title">Logo</label>
-                <?php $this->renderPartial('file/_upload_image', array(
+                <?php echo $this->renderPartial('file/_upload_image', array(
                     'field'=>'site:logo',
                     'preview_image_width'=>0,
                     'label'=>'Logo',

@@ -8,7 +8,8 @@ use cms\models\tables\WidgetAreasWidgetsTable;
 use cms\models\tables\WidgetsTable;
 use cms\services\widget\WidgetAreaService;
 use fay\common\ListView;
-use fay\core\HttpException;
+use fay\exceptions\NotFoundHttpException;
+use fay\exceptions\ValidationException;
 use fay\core\Response;
 use fay\core\Sql;
 use fay\helpers\LocalFileHelper;
@@ -55,7 +56,7 @@ class WidgetController extends AdminController{
         //小工具域列表
         $this->view->widget_areas = WidgetAreaService::service()->getAll();
         
-        $this->view->render();
+        return $this->view->render();
     }
     
     public function edit(){
@@ -71,7 +72,7 @@ class WidgetController extends AdminController{
 
         $widget = WidgetsTable::model()->find($id);
         if(!$widget){
-            throw new HttpException('指定的小工具ID不存在');
+            throw new NotFoundHttpException('指定的小工具ID不存在');
         }
         $widget_obj = \F::widget()->get($widget['widget_name'], 'Admin');
         
@@ -134,7 +135,7 @@ class WidgetController extends AdminController{
         $this->view->customize = Loader::isEditing();
         $this->layout->subtitle = '编辑小工具  - '.$this->view->widget_admin->title;
 
-        $this->view->render();
+        return $this->view->render();
     }
     
     /**
@@ -144,7 +145,7 @@ class WidgetController extends AdminController{
         if($this->input->get('name')){
             $widget_obj = \F::widget()->get($this->input->get('name', 'trim'));
             if($widget_obj == null){
-                throw new HttpException('Widget不存在或已被删除');
+                throw new NotFoundHttpException('Widget不存在或已被删除');
             }
             $action = StringHelper::hyphen2case($this->input->get('action', 'trim', 'index'), false);
             if(method_exists($widget_obj, $action)){
@@ -152,10 +153,10 @@ class WidgetController extends AdminController{
             }else if(method_exists($widget_obj, $action.'Action')){
                 $widget_obj->{$action.'Action'}($this->input->get());
             }else{
-                throw new HttpException('Widget方法不存在');
+                throw new NotFoundHttpException('Widget方法不存在');
             }
         }else{
-            throw new HttpException('不完整的请求');
+            throw new NotFoundHttpException('不完整的请求');
         }
     }
     
@@ -182,7 +183,7 @@ class WidgetController extends AdminController{
                 'id'=>$widget_id,
             )));
         }else{
-            throw new HttpException('不完整的请求');
+            throw new ValidationException('不完整的请求');
         }
     }
 
@@ -205,7 +206,7 @@ class WidgetController extends AdminController{
             'empty_text'=>'<tr><td colspan="5" align="center">无相关记录！</td></tr>',
         ));
         
-        $this->view->render();
+        return $this->view->render();
     }
 
     /**
@@ -228,25 +229,24 @@ class WidgetController extends AdminController{
      * 判断widget别名是否存在
      */
     public function isAliasNotExist(){
-        if(WidgetsTable::model()->fetchRow(array(
+        if(WidgetsTable::model()->has(array(
             'alias = ?'=>$this->input->request('alias', 'trim'),
             'id != ?'=>$this->input->request('id', 'intval', false)
         ))){
-            Response::json('', 0, '别名已存在');
+            return Response::json('', 0, '别名已存在');
         }else{
-            Response::json();
+            return Response::json();
         }
     }
 
     /**
      * 复制widget
-     * @throws HttpException
      */
     public function copy(){
         $id = $this->input->get('id', 'intval');
         $widget = WidgetsTable::model()->find($id);
         if(!$widget){
-            throw new HttpException('指定小工具ID不存在');
+            throw new NotFoundHttpException('指定小工具ID不存在');
         }
         
         $widget_id = WidgetsTable::model()->insert(array(
@@ -287,22 +287,22 @@ class WidgetController extends AdminController{
             //返回默认模版
             $widget = WidgetsTable::model()->find($this->input->get('id', 'intval'));
             if(!$widget){
-                throw new HttpException('指定小工具ID不存在');
+                throw new NotFoundHttpException('指定小工具ID不存在');
             }
             
             $widgetInstance = \F::widget()->get($widget['widget_name']);
             if(!$widgetInstance){
-                throw new HttpException('widget不存在或已被删除');
+                throw new NotFoundHttpException('widget不存在或已被删除');
             }
             
-            Response::json($widgetInstance->getDefaultTemplate());
+            return Response::json($widgetInstance->getDefaultTemplate());
         }else{
             //返回view文件内容
             $view_file_content = WidgetHelper::getViewByRouter($view);
             if($view_file_content === false){
-                Response::json('', 0, "找不到view文件[{$view}]");
+                return Response::json('', 0, "找不到view文件[{$view}]");
             }else{
-                Response::json($view_file_content);
+                return Response::json($view_file_content);
             }
         }
     }

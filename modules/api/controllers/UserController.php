@@ -4,7 +4,8 @@ namespace cms\modules\api\controllers;
 use cms\library\ApiController;
 use cms\models\tables\UsersTable;
 use cms\services\user\UserService;
-use fay\core\HttpException;
+use fay\exceptions\NotFoundHttpException;
+use fay\core\JsonResponse;
 use fay\core\Response;
 
 /**
@@ -30,9 +31,9 @@ class UserController extends ApiController{
             'username = ?'=>$this->form()->getData('username'),
             'id != ?'=>$this->input->request('id', 'intval', false),
         ))){
-            Response::json('', 0, '用户名已存在');
+            return new JsonResponse('', 0, '用户名已存在');
         }else{
-            Response::json('', 1, '用户名可用');
+            return new JsonResponse('', 1, '用户名可用');
         }
     }
     
@@ -56,9 +57,9 @@ class UserController extends ApiController{
             'delete_time = 0',
             'id != ?'=>$this->input->request('id', 'intval', false)
         ))){
-            Response::json('', 1, '用户名存在');
+            return new JsonResponse('', 1, '用户名存在');
         }else{
-            Response::json('', 0, '用户名不存在');
+            return new JsonResponse('', 0, '用户名不存在');
         }
     }
     /**
@@ -80,9 +81,9 @@ class UserController extends ApiController{
             'nickname = ?'=>$this->form()->getData('nickname'),
             'id != ?'=>$this->input->request('id', 'intval', false),
         ))){
-            Response::json('', 0, '昵称已存在');
+            return new JsonResponse('', 0, '昵称已存在');
         }else{
-            Response::json();
+            return new JsonResponse();
         }
     }
     
@@ -106,9 +107,9 @@ class UserController extends ApiController{
             'delete_time = 0',
             'id != ?'=>$this->input->request('id', 'intval', false)
         ))){
-            Response::json();
+            return new JsonResponse();
         }else{
-            Response::json('', 0, '该昵称不存在');
+            return new JsonResponse('', 0, '该昵称不存在');
         }
     }
     
@@ -139,7 +140,7 @@ class UserController extends ApiController{
         if($user){
             Response::json($user);
         }else{
-            throw new HttpException('指定用户不存在');
+            throw new NotFoundHttpException('指定用户不存在');
         }
     }
 }

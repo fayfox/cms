@@ -59,7 +59,7 @@ class LogController extends AdminController{
         Loader::vendor('IpLocation/IpLocation.class');
         $this->view->iplocation = new \IpLocation();
         
-        $this->view->render();
+        return $this->view->render();
     }
     
     public function get(){
@@ -70,9 +70,9 @@ class LogController extends AdminController{
             ->fetchRow()
         ;
         if($log){
-            Response::json($log);
+            return Response::json($log);
         }else{
-            Response::json('', 0, '指定日志不存在');
+            return Response::json('', 0, '指定日志不存在');
         }
     }
 }

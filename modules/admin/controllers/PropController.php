@@ -6,7 +6,8 @@ use cms\models\tables\PropsTable;
 use cms\services\prop\ItemPropService;
 use cms\services\prop\PropService;
 use fay\common\ListView;
-use fay\core\HttpException;
+use fay\exceptions\NotFoundHttpException;
+use fay\exceptions\ValidationException;
 use fay\core\Response;
 use fay\core\Sql;
 use fay\helpers\HtmlHelper;
@@ -16,13 +17,13 @@ use fay\helpers\HtmlHelper;
  */
 class PropController extends AdminController{
     public function isAliasNotExist(){
-        if(PropsTable::model()->fetchRow(array(
+        if(PropsTable::model()->has(array(
             'alias = ?'=>$this->input->request('alias', 'trim'),
-            'id != ?'=>$this->input->get('id', 'intval', false),
+            'id != ?'=>$this->input->request('id', 'intval', false),
         ))){
-            Response::json('', 0, '别名已存在');
+            return Response::json('', 0, '别名已存在');
         }else{
-            Response::json('', 1, '别名不存在');
+            return Response::json('', 1, '别名不存在');
         }
     }
     
@@ -33,12 +34,12 @@ class PropController extends AdminController{
         $this->form()->setModel(PropsTable::model());
 
         $this->_setListview();
-        $this->view->render();
+        return $this->view->render();
     }
     
     public function create(){
         if(!$this->input->post()){
-            throw new HttpException('无数据提交');
+            throw new ValidationException('无数据提交');
         }
 
         if($this->form()->setModel(PropsTable::model())->check()){
@@ -82,14 +83,14 @@ class PropController extends AdminController{
         $this->layout->subtitle = '编辑自定义属性 - ' . $prop['title'];
 
         if(!$prop){
-            throw new HttpException('所选自定义属性不存在');
+            throw new NotFoundHttpException('所选自定义属性不存在');
         }
         $this->form()->setData($prop);
         $this->view->prop = $prop;
 
 
         $this->_setListview();
-        $this->view->render();
+        return $this->view->render();
     }
 
     /**
@@ -148,7 +149,7 @@ class PropController extends AdminController{
             $data[$key]['element_name'] = $element::getName();
         }
 
-        Response::json(array(
+        return Response::json(array(
             'props'=>$data,
             'pager'=>$listview->getPager(),
         ));
@@ -171,13 +172,13 @@ class PropController extends AdminController{
             'delete_time = 0',
         ), '!delete_time');
         if(!$prop){
-            throw new HttpException("指定属性ID[{$this->form()->getData('id')}]不存在或已删除");
+            throw new NotFoundHttpException("指定属性ID[{$this->form()->getData('id')}]不存在或已删除");
         }
 
         $element = ItemPropService::$elementMap[$prop['element']];
         $prop['element_name'] = $element::getName();
         
-        Response::json(array(
+        return Response::json(array(
             'prop'=>$prop,
         ));
     }

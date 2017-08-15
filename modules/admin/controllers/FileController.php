@@ -4,6 +4,7 @@ namespace cms\modules\admin\controllers;
 use cms\library\AdminController;
 use cms\models\forms\SettingForm;
 use cms\models\tables\ActionlogsTable;
+use cms\models\tables\CategoriesTable;
 use cms\models\tables\FilesTable;
 use cms\services\CategoryService;
 use cms\services\file\FileService;
@@ -14,7 +15,9 @@ use cms\services\file\WeixinFileService;
 use cms\services\OptionService;
 use cms\services\SettingService;
 use fay\common\ListView;
-use fay\core\HttpException;
+use fay\exceptions\NotFoundHttpException;
+use fay\exceptions\RecordNotFoundException;
+use fay\exceptions\ValidationException;
 use fay\core\Response;
 use fay\core\Sql;
 use fay\core\Validator;
@@ -37,7 +40,7 @@ class FileController extends AdminController{
         ));
         
         if($check !== true){
-            throw new HttpException('参数异常');
+            throw new ValidationException('参数异常');
         }
         
         set_time_limit(0);
@@ -46,7 +49,7 @@ class FileController extends AdminController{
         if($cat){
             $cat = CategoryService::service()->get('_system_file_' . $cat, 'id,alias');
             if(!$cat){
-                throw new HttpException('指定的文件分类不存在');
+                throw new RecordNotFoundException('指定的文件分类不存在');
             }
         }else{
             $cat = 0;
@@ -82,9 +85,9 @@ class FileController extends AdminController{
             }
         }else{
             if($result['status']){
-                Response::json($data);
+                return Response::json($data);
             }else{
-                Response::json(new \stdClass(), 0, '上传失败：'.implode("\r\n", $data));
+                return Response::json(new \stdClass(), 0, '上传失败：'.implode("\r\n", $data));
             }
         }
     }
@@ -97,7 +100,7 @@ class FileController extends AdminController{
         ));
         
         if($check !== true){
-            throw new HttpException('参数异常', 500);
+            throw new ValidationException('参数异常', 500);
         }
         
         set_time_limit(0);
@@ -106,7 +109,7 @@ class FileController extends AdminController{
         if($cat){
             $cat = CategoryService::service()->get('_system_file_' . $cat, 'id,alias');
             if(!$cat){
-                throw new HttpException('指定的文件分类不存在');
+                throw new RecordNotFoundException('指定的文件分类不存在');
             }
         }else{
             $cat = array(
@@ -120,7 +123,7 @@ class FileController extends AdminController{
         
         $file = @imagecreatefromstring(base64_decode($this->input->post('file')));
         if(!$file){
-            throw new HttpException('上传文件格式错误', 500);
+            throw new ValidationException('上传文件格式错误', 500);
         }
 
         if($cat['alias']){
@@ -164,7 +167,7 @@ class FileController extends AdminController{
         
         $data = $this->afterUpload($data);
         
-        Response::json($data);
+        return Response::json($data);
     }
     
     /**
@@ -177,7 +180,7 @@ class FileController extends AdminController{
         ));
         
         if($check !== true){
-            throw new HttpException('参数异常');
+            throw new ValidationException('参数异常');
         }
         
         set_time_limit(0);
@@ -186,7 +189,7 @@ class FileController extends AdminController{
         if($cat){
             $cat = CategoryService::service()->get('_system_file_' . $cat, 'id,alias');
             if(!$cat){
-                throw new HttpException('指定的文件分类不存在');
+                throw new RecordNotFoundException('指定的文件分类不存在');
             }
         }else{
             $cat = 0;
@@ -221,7 +224,7 @@ class FileController extends AdminController{
                 ));
             }
         }else{
-            Response::json($data);
+            return Response::json($data);
         }
     }
     
@@ -263,7 +266,7 @@ class FileController extends AdminController{
         //获取文件类目树
         $this->view->cats = CategoryService::service()->getTree('_system_file');
         $this->layout->subtitle = '上传文件';
-        $this->view->render();
+        return $this->view->render();
     }
     
     public function remove(){
@@ -274,8 +277,9 @@ class FileController extends AdminController{
             }
             
             FilesTable::model()->delete($file_id);
-            @unlink((defined('NO_REWRITE') ? './public/' : '').$file['file_path'] . $file['raw_name'] . $file['file_ext']);
-            @unlink((defined('NO_REWRITE') ? './public/' : '').$file['file_path'] . $file['raw_name'] . '-100x100' . $file['file_ext']);
+            //删除文件（用相对路径去删，因为绝对路径会调用realpath()，当文件不存在的情况下会报错
+            @unlink(FileService::getPath($file, false));
+            @unlink(FileService::getThumbnailPath($file, false));
             Response::notify('success', '删除成功');
         }else{
             Response::notify('error', '参数不完整');
@@ -343,7 +347,7 @@ class FileController extends AdminController{
             'empty_text'=>'<tr><td colspan="'.(count($this->form('setting')->getData('cols')) + 3).'" align="center">无相关记录！</td></tr>',
         ));
         
-        $this->view->render();
+        return $this->view->render();
     }
     
     public function batch(){
@@ -361,8 +365,9 @@ class FileController extends AdminController{
                         }
                             
                         FilesTable::model()->delete($id);
-                        @unlink((defined('NO_REWRITE') ? './public/' : '').$file['file_path'] . $file['raw_name'] . $file['file_ext']);
-                        @unlink((defined('NO_REWRITE') ? './public/' : '').$file['file_path'] . $file['raw_name'] . '-100x100' . $file['file_ext']);
+                        //删除文件（用相对路径去删，因为绝对路径会调用realpath()，当文件不存在的情况下会报错
+                        @unlink(FileService::getPath($file, false));
+                        @unlink(FileService::getThumbnailPath($file, false));
                         $affected_rows++;
                     }
                 }
@@ -415,7 +420,7 @@ class FileController extends AdminController{
                 }
                 
                 FilesTable::model()->incr($file_id, 'downloads', 1);
-                $data = file_get_contents((defined('NO_REWRITE') ? './public/' : '').$file['file_path'].$file['raw_name'].$file['file_ext']);
+                $data = file_get_contents(FileService::getPath($file));
                 if (strpos($_SERVER['HTTP_USER_AGENT'], "MSIE") !== FALSE){
                     header('Content-Type: "'.$file['file_type'].'"');
                     header('Content-Disposition: attachment; filename="'.$filename.'"');
@@ -434,10 +439,10 @@ class FileController extends AdminController{
                 }
                 die($data);
             }else{
-                throw new HttpException('文件不存在');
+                throw new NotFoundHttpException('文件不存在');
             }
         }else{
-            throw new HttpException('参数不正确', 500);
+            throw new ValidationException('参数不正确', 500);
         }
     }
 
@@ -448,8 +453,12 @@ class FileController extends AdminController{
         $this->layout->current_directory = 'file';
         $this->layout->subtitle = '文件分类';
         $this->view->cats = CategoryService::service()->getTree('_system_file');
-        $root_node = CategoryService::service()->getByAlias('_system_file', 'id');
+        $root_node = CategoryService::service()->get('_system_file', 'id');
         $this->view->root = $root_node['id'];
+
+        \F::form('create')->setModel(CategoriesTable::model());
+        \F::form('edit')->setModel(CategoriesTable::model());
+        
         if($this->checkPermission('cms/admin/link/cat-create')){
             $this->layout->sublink = array(
                 'uri'=>'#create-cat-dialog',
@@ -462,7 +471,7 @@ class FileController extends AdminController{
             );
         }
 
-        $this->view->render();
+        return $this->view->render();
     }
 
     public function pic(){
@@ -567,7 +576,7 @@ class FileController extends AdminController{
         if($file !== false){
             //出于性能考虑，这里不会去判断物理文件是否存在（除非服务器挂了，否则肯定存在）
             header('Content-type: '.$file['file_type']);
-            readfile((defined('NO_REWRITE') ? './public/' : '').$file['file_path'].$file['raw_name'].$file['file_ext']);
+            readfile(FileService::getPath($file));
         }else{
             $spare = $this->config->get($this->input->get('s', 'trim', 'default'), 'noimage');
             $spare || $spare = $this->config->get('default', 'noimage');
@@ -579,7 +588,7 @@ class FileController extends AdminController{
     private function _thumbnail($file){
         if($file !== false){
             header('Content-type: '.$file['file_type']);
-            readfile((defined('NO_REWRITE') ? './public/' : '').$file['file_path'].$file['raw_name'].'-100x100' . $file['file_ext']);
+            readfile(FileService::getThumbnailPath($file));
         }else{
             $spare = $this->config->get($this->input->get('s', 'trim', 'thumbnail'), 'noimage');
             $spare || $spare = $this->config->get('thumbnail', 'noimage');
@@ -598,7 +607,7 @@ class FileController extends AdminController{
         //选中部分的高度
         $h = $this->input->get('h', 'intval');
         if(!$w || !$h){
-            throw new HttpException('不完整的请求', 500);
+            throw new ValidationException('不完整的请求', 500);
         }
         
         //输出宽度

@@ -10,7 +10,7 @@ use cms\services\user\UserPropService;
 use cms\services\user\UserRoleService;
 use cms\services\user\UserService;
 use fay\common\ListView;
-use fay\core\HttpException;
+use fay\exceptions\ValidationException;
 use fay\core\Loader;
 use fay\core\Response;
 use fay\core\Sql;
@@ -116,7 +116,7 @@ class UserController extends AdminController{
         Loader::vendor('IpLocation/IpLocation.class');
         $this->view->iplocation = new \IpLocation();
         
-        $this->view->render();
+        return $this->view->render();
     }
     
     public function create(){
@@ -160,7 +160,7 @@ class UserController extends AdminController{
             'delete_time = 0',
         ), 'id,title');
         
-        $this->view->render();
+        return $this->view->render();
     }
     
     
@@ -203,14 +203,14 @@ class UserController extends AdminController{
         ), 'id,title');
         
         $this->view->prop_set = UserPropService::service()->getPropSet($user_id);
-        $this->view->render();
+        return $this->view->render();
     }
     
     public function item(){
         if($id = $this->input->get('id', 'intval')){
             $this->view->user = UserService::service()->get($id, 'user.*,props.*,roles.title,profile.*');
         }else{
-            throw new HttpException('参数不完整', 500);
+            throw new ValidationException('参数不完整');
         }
         
         $this->layout->subtitle = "用户 - {$this->view->user['user']['username']}";
@@ -225,7 +225,7 @@ class UserController extends AdminController{
             );
         }
         
-        $this->view->render();
+        return $this->view->render();
     }
     
     public function getPropPanel(){

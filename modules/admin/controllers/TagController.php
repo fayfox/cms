@@ -7,7 +7,7 @@ use cms\models\tables\PostsTagsTable;
 use cms\models\tables\TagCounterTable;
 use cms\models\tables\TagsTable;
 use fay\common\ListView;
-use fay\core\HttpException;
+use fay\exceptions\NotFoundHttpException;
 use fay\core\Response;
 use fay\core\Sql;
 
@@ -24,7 +24,7 @@ class TagController extends AdminController{
         
         $this->form()->setModel(TagsTable::model());
         
-        $this->view->render();
+        return $this->view->render();
     }
     
     public function create(){
@@ -87,9 +87,9 @@ class TagController extends AdminController{
             
             $this->_setListview();
             
-            $this->view->render();
+            return $this->view->render();
         }else{
-            throw new HttpException('无效的ID');
+            throw new NotFoundHttpException('无效的ID');
         }
     }
     
@@ -155,6 +155,6 @@ class TagController extends AdminController{
             'title LIKE ?'=>'%'.$this->input->get('key', false).'%'
         ), 'id,title', 'sort', 20);
         
-        Response::json($tags);
+        return Response::json($tags);
     }
 }

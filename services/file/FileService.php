@@ -5,7 +5,7 @@ use cms\models\tables\FilesTable;
 use cms\services\CategoryService;
 use cms\services\OptionService;
 use fay\common\Upload;
-use fay\core\ErrorException;
+use fay\exceptions\ValidationException;
 use fay\core\Loader;
 use fay\core\Service;
 use fay\helpers\ArrayHelper;
@@ -129,24 +129,7 @@ class FileService extends Service{
         
         switch($type){
             case self::PIC_THUMBNAIL://缩略图
-                if($file['qiniu'] && OptionService::get('qiniu:enabled')){
-                    //若开启了七牛云存储，且文件已上传，则显示七牛路径
-                    return QiniuService::service()->getUrl($file, array(
-                        'dw'=>'100',
-                        'dh'=>'100',
-                    ));
-                }else{
-                    if(substr($file['file_path'], 0, 4) == './..'){
-                        //私有文件，不能直接访问文件
-                        return UrlHelper::createUrl('file/pic', array(
-                            't'=>self::PIC_THUMBNAIL,
-                            'f'=>$file['id'],
-                        ));
-                    }else{
-                        //公共文件，直接返回真实路径
-                        return UrlHelper::createUrl() . ltrim($file['file_path'], './') . $file['raw_name'] . '-100x100' . $file['file_ext'];
-                    }
-                }
+                return self::getThumbnailUrl($file);
             break;
             case self::PIC_CROP://裁剪
                 $img_params = array(
@@ -232,11 +215,9 @@ class FileService extends Service{
         if(NumberHelper::isInt($file)){
             $file = FilesTable::model()->find($file, 'raw_name,file_ext,file_path');
         }
-        if($realpath){
-            return realpath($file['file_path'] . $file['raw_name'] . $file['file_ext']);
-        }else{
-            return $file['file_path'] . $file['raw_name'] . $file['file_ext'];
-        }
+        
+        $relative_path = (defined('NO_REWRITE') ? './public/' : '') . $file['file_path'] . $file['raw_name'] . $file['file_ext'];
+        return $realpath ? realpath($relative_path) : $relative_path;
     }
     
     /**
@@ -313,14 +294,9 @@ class FileService extends Service{
             //非图片类型返回false
             return false;
         }
-        
-        if($realpath){
-            //返回完整路径
-            return realpath($file['file_path'] . $file['raw_name'] . '-100x100' . $file['file_ext']);
-        }else{
-            //返回相对路径
-            return $file['file_path'] . $file['raw_name'] . '-100x100' . $file['file_ext'];
-        }
+
+        $relative_path = (defined('NO_REWRITE') ? './public/' : '') . $file['file_path'] . $file['raw_name'] . '-100x100' . $file['file_ext'];
+        return $realpath ? realpath($relative_path) : $relative_path;
     }
 
     /**
@@ -330,7 +306,6 @@ class FileService extends Service{
      * @param null|array $allowed_types 允许的文件类型，若为null，则根据config文件配置
      * @param null|bool $auto_orientate 是否自动判断并旋转jpg图片角度，若为null，则根据config文件配置
      * @return array
-     * @throws ErrorException
      */
     public function upload($cat = 0, $private = false, $allowed_types = null, $auto_orientate = null){
         if($cat){
@@ -339,7 +314,7 @@ class FileService extends Service{
             }
             
             if(!$cat){
-                throw new ErrorException('cms\services\file\FileService::upload传入$cat不存在');
+                throw new \UnexpectedValueException('指定分类不存在');
             }
         }else{
             $cat = array(
@@ -525,7 +500,7 @@ class FileService extends Service{
      *  - $params['w'] 裁剪时宽度
      *  - $params['h'] 裁剪时高度
      * @return array|bool|int
-     * @throws ErrorException
+     * @throws ValidationException
      */
     public function edit($file, $handler, $params){
         if(NumberHelper::isInt($file)){
@@ -569,7 +544,7 @@ class FileService extends Service{
                 break;
             case 'crop':
                 if(!$params['x'] || !$params['y'] || !$params['w'] || !$params['h']){
-                    throw new ErrorException('cms\services\file\FileService::edit方法crop处理缺少必要参数');
+                    throw new ValidationException('crop处理缺少必要参数');
                 }
 
                 if($params['dw'] == 0){

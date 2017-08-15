@@ -4,10 +4,11 @@ namespace cms\modules\admin\controllers;
 use cms\library\AdminController;
 use cms\models\tables\ActionlogsTable;
 use cms\models\tables\ActionsTable;
+use cms\models\tables\CategoriesTable;
 use cms\services\CategoryService;
 use cms\services\FlashService;
 use fay\common\ListView;
-use fay\core\HttpException;
+use fay\exceptions\NotFoundHttpException;
 use fay\core\Response;
 use fay\core\Sql;
 
@@ -28,7 +29,7 @@ class ActionController extends AdminController{
             ->setRule(array('parent_router', 'ajax', array('url'=>array('cms/admin/action/is-router-exist'))))
             ->setLabels(array('parent_router'=>'父级路由'))
         ;
-        $this->view->render();
+        return $this->view->render();
     }
     
     public function create(){
@@ -98,7 +99,7 @@ class ActionController extends AdminController{
 
         $action = ActionsTable::model()->find($action_id);
         if(!$action){
-            throw new HttpException("指定权限ID[{$action_id}]不存在");
+            throw new NotFoundHttpException("指定权限ID[{$action_id}]不存在");
         }
         if($action['parent']){
             $parent_action = ActionsTable::model()->find($action['parent'], 'router');
@@ -107,7 +108,7 @@ class ActionController extends AdminController{
         $this->form()->setData($action);
         
         $this->_setListview();
-        $this->view->render();
+        return $this->view->render();
     }
     
     public function remove(){
@@ -122,27 +123,27 @@ class ActionController extends AdminController{
             'router LIKE ?'=>'%'.$this->input->get('key', false).'%'
         ), 'id,router AS title', 'title', 20);
         
-        Response::json($actions);
+        return Response::json($actions);
     }
     
     public function isRouterNotExist(){
-        if(ActionsTable::model()->fetchRow(array(
+        if(ActionsTable::model()->has(array(
             'router = ?'=>$this->input->request('router', 'trim'),
             'id != ?'=>$this->input->request('id', 'intval', false),
         ))){
-            Response::json('', 0, '该路由已存在');
+            return Response::json('', 0, '该路由已存在');
         }else{
-            Response::json('', 1, '路由不存在');
+            return Response::json('', 1, '路由不存在');
         }
     }
     
     public function isRouterExist(){
-        if(ActionsTable::model()->fetchRow(array(
+        if(ActionsTable::model()->has(array(
             'router = ?'=>$this->input->request('router', 'trim'),
         ))){
-            Response::json('', 1, '路由已存在');
+            return Response::json('', 1, '路由已存在');
         }else{
-            Response::json('', 0, '路由不存在');
+            return Response::json('', 0, '路由不存在');
         }
     }
     
@@ -178,8 +179,11 @@ class ActionController extends AdminController{
         FlashService::set('如果您不清楚它的是干嘛用的，请不要随意修改，后果可能很严重！', 'warning');
         
         $this->view->cats = CategoryService::service()->getTree('_system_action');
-        $root_node = CategoryService::service()->getByAlias('_system_action', 'id');
+        $root_node = CategoryService::service()->get('_system_action', 'id');
         $this->view->root = $root_node['id'];
+
+        \F::form('create')->setModel(CategoriesTable::model());
+        \F::form('edit')->setModel(CategoriesTable::model());
         
         $this->layout->sublink = array(
             'uri'=>'#create-cat-dialog',
@@ -191,6 +195,6 @@ class ActionController extends AdminController{
             ),
         );
         
-        $this->view->render();
+        return $this->view->render();
     }
 }

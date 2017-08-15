@@ -1,20 +1,21 @@
 <?php
-use cms\models\tables\CategoriesTable;
 use fay\helpers\HtmlHelper;
 
 /**
  * @var $root int
  * @var $cats array
+ * @var $group_key string 归档字段（若是归档树，会有这个变量）
+ * @var $group_value int 归档值（若是归档树，会有这个变量）
+ * @var $get_cat_url string ajax获取分类信息链接
+ * @var $create_cat_url string 创建分类表单提交地址
+ * @var $edit_cat_url string 编辑分类表单提交地址
  */
-
-F::form('create')->setModel(CategoriesTable::model());
-F::form('edit')->setModel(CategoriesTable::model());
 ?>
 <div class="hide">
     <div id="edit-cat-dialog" class="dialog">
         <div class="dialog-content w600">
             <h4>编辑分类<em>（当前分类：<span id="edit-cat-title" class="fc-orange"></span>）</em></h4>
-            <?php echo F::form('edit')->open(array('cms/admin/category/edit'))?>
+            <?php echo F::form('edit')->open(empty($edit_cat_url) ? array('cms/admin/category/edit') : $edit_cat_url)?>
                 <?php echo HtmlHelper::inputHidden('id')?>
                 <table class="form-table">
                     <tr>
@@ -41,7 +42,7 @@ F::form('edit')->setModel(CategoriesTable::model());
                     <tr>
                         <th class="adaption">排序</th>
                         <td>
-                            <?php echo HtmlHelper::inputText('sort', '1000', array(
+                            <?php echo HtmlHelper::inputNumber('sort', '1000', array(
                                 'class'=>'form-control w100 ib',
                             ))?>
                             <span class="fc-grey">0-65535之间，数值越小，排序越靠前</span>
@@ -66,7 +67,7 @@ F::form('edit')->setModel(CategoriesTable::model());
                     </tr>
                     <tr>
                         <th valign="top" class="adaption">插图</th>
-                        <td><?php $this->renderPartial('file/_upload_image', array(
+                        <td><?php echo $this->renderPartial('file/_upload_image', array(
                             'cat'=>'cat',
                             'field'=>'file_id',
                             'preview_image_width'=>'thumbnail',
@@ -112,8 +113,13 @@ F::form('edit')->setModel(CategoriesTable::model());
     <div id="create-cat-dialog" class="dialog">
         <div class="dialog-content w600">
             <h4>添加子分类<em>（父分类：<span id="create-cat-parent" class="fc-orange"></span>）</em></h4>
-            <?php echo F::form('create')->open(array('cms/admin/category/create'))?>
+            <?php echo F::form('create')->open(empty($create_cat_url) ? array('cms/admin/category/create') : $create_cat_url)?>
                 <?php echo HtmlHelper::inputHidden('parent')?>
+                <?php
+                    if(!empty($group_key)){
+                        echo HtmlHelper::inputHidden($group_key, $group_value);
+                    }
+                ?>
                 <table class="form-table">
                     <tr>
                         <th class="adaption">标题<em class="required">*</em></th>
@@ -139,7 +145,7 @@ F::form('edit')->setModel(CategoriesTable::model());
                     <tr>
                         <th class="adaption">排序</th>
                         <td>
-                            <?php echo HtmlHelper::inputText('sort', '1000', array(
+                            <?php echo HtmlHelper::inputNumber('sort', '1000', array(
                                 'class'=>'form-control w100 ib',
                             ))?>
                             <span class="fc-grey">0-65535之间，数值越小，排序越靠前</span>
@@ -156,7 +162,7 @@ F::form('edit')->setModel(CategoriesTable::model());
                     </tr>
                     <tr>
                         <th valign="top" class="adaption">插图</th>
-                        <td><?php $this->renderPartial('file/_upload_image', array(
+                        <td><?php echo $this->renderPartial('file/_upload_image', array(
                             'cat'=>'cat',
                             'field'=>'file_id',
                             'preview_image_width'=>'thumbnail',
@@ -198,11 +204,12 @@ F::form('edit')->setModel(CategoriesTable::model());
         </div>
     </div>
 </div>
-<script type="text/javascript" src="<?php echo $this->assets('js/plupload.full.js')?>"></script>
-<script type="text/javascript" src="<?php echo $this->assets('faycms/js/admin/fayfox.editsort.js')?>"></script>
 <script type="text/javascript" src="<?php echo $this->assets('faycms/js/admin/cat.js')?>"></script>
 <script>
 $(function(){
     cat.init();
+    <?php if(!empty($get_cat_url)){?>
+    cat.getCatUrl = '<?php echo $get_cat_url?>';
+    <?php }?>
 })
 </script>

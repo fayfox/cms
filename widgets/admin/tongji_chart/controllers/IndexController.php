@@ -20,12 +20,12 @@ class IndexController extends Widget{
         $this->view->today_total = $analyst['today_total'];
         $this->view->yesterday_total = $analyst['yesterday_total'];
         
-         $this->view->render();
+         return $this->view->render();
     }
     
     public function placeholder(){
         
-        $this->view->render('placeholder');
+        return $this->view->render('placeholder');
     }
     
     private function getAnalyst($type){
@@ -88,10 +88,10 @@ class IndexController extends Widget{
     public function getData(){
         $type = $this->input->get('t');
         if(!in_array($type, array('pv', 'uv', 'ip', 'new_visitors'))){
-            Response::json('', 0, '参数异常');
+            return Response::json('', 0, '参数异常');
         }
         $analyst = $this->getAnalyst($type);
-        Response::json(array(
+        return Response::json(array(
             'today'=>$analyst['today'],
             'yesterday'=>$analyst['yesterday'],
             'today_total'=>$analyst['today_total'],

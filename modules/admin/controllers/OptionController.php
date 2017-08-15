@@ -5,8 +5,9 @@ use cms\library\AdminController;
 use cms\models\tables\ActionlogsTable;
 use cms\models\tables\OptionsTable;
 use cms\services\FlashService;
+use cms\services\OptionService;
 use fay\common\ListView;
-use fay\core\HttpException;
+use fay\exceptions\NotFoundHttpException;
 use fay\core\Response;
 use fay\core\Sql;
 
@@ -62,9 +63,9 @@ class OptionController extends AdminController{
             
             $this->_setListview();
             
-            $this->view->render();
+            return $this->view->render();
         }else{
-            throw new HttpException('无效的ID');
+            throw new NotFoundHttpException('无效的ID');
         }
     }
     
@@ -76,7 +77,7 @@ class OptionController extends AdminController{
         
         $this->form()->setModel(OptionsTable::model());
         
-        $this->view->render();
+        return $this->view->render();
     }
     
     public function remove(){
@@ -101,13 +102,13 @@ class OptionController extends AdminController{
     }
     
     public function isOptionNotExist(){
-        if(OptionsTable::model()->fetchRow(array(
+        if(OptionsTable::model()->has(array(
             'option_name = ?'=>$this->input->request('option_name', 'trim'),
             'id != ?'=>$this->input->request('id', 'intval', 0),
         ))){
-            Response::json('', 0, '参数名已存在');
+            return Response::json('', 0, '参数名已存在');
         }else{
-            Response::json();
+            return Response::json();
         }
     }
     
@@ -140,5 +141,15 @@ class OptionController extends AdminController{
             'page_size'=>15,
             'empty_text'=>'<tr><td colspan="3" align="center">无相关记录！</td></tr>',
         ));
+    }
+    
+    public function set(){
+        if($this->input->post()){
+            $data = $this->input->post();
+            unset($data['_submit']);//提交按钮不用保存
+            OptionService::mset($data);
+            Response::notify('success', '保存成功');
+        }
+        Response::notify('error', '无数据提交');
     }
 }

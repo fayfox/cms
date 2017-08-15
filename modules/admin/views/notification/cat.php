@@ -6,9 +6,9 @@ function showCats($cats, $dep = 0){?>
     <?php foreach($cats as $k=>$c){?>
         <li class="leaf-container <?php if(!$k)echo 'first';?>">
             <div class="leaf">
-                <span class="fr options">
+                <span class="fr separate-actions">
                     <span class="w115 block fl">
-                    排序：<?php echo HtmlHelper::inputText('sort[]', $c['sort'], array(
+                    排序：<?php echo HtmlHelper::inputNumber('sort[]', $c['sort'], array(
                         'size'=>3,
                         'maxlength'=>3,
                         'data-id'=>$c['id'],
@@ -64,4 +64,12 @@ function showCats($cats, $dep = 0){?>
         </div>
     </div>
 </div>
-<?php $this->renderPartial('cms/admin/category/_common');?>
+<?php echo $this->renderPartial('cms/admin/category/_common');?>
+<script type="text/javascript" src="<?php echo $this->assets('faycms/js/admin/fayfox.editsort.js')?>"></script>
+<script>
+    $(function(){
+        $('.edit-sort').feditsort({
+            'url':system.url('cms/admin/category/sort')
+        });
+    });
+</script>

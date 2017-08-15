@@ -3,7 +3,8 @@ namespace cms\modules\api\controllers;
 
 use cms\library\ApiController;
 use cms\services\FollowService;
-use fay\core\HttpException;
+use fay\exceptions\NotFoundHttpException;
+use fay\core\JsonResponse;
 use fay\core\Response;
 use fay\helpers\FieldsHelper;
 
@@ -190,7 +191,7 @@ class FollowController extends ApiController{
         
         $user_id = $this->form()->getData('user_id', $this->current_user);
         if(!$user_id){
-            throw new HttpException('未指定用户', 404, 'user_id:not-found');
+            throw new NotFoundHttpException('未指定用户');
         }
         
         $fields = new FieldsHelper(
@@ -203,7 +204,7 @@ class FollowController extends ApiController{
             $fields,
             $this->form()->getData('page', 1),
             $this->form()->getData('page_size', 20));
-        Response::json($fans);
+        return new JsonResponse($fans);
     }
     
     /**
@@ -236,7 +237,7 @@ class FollowController extends ApiController{
         
         $user_id = $this->form()->getData('user_id', $this->current_user);
         if(!$user_id){
-            throw new HttpException('未指定用户', 404, 'user_id:not-found');
+            throw new NotFoundHttpException('未指定用户');
         }
         
         $fields = new FieldsHelper(
@@ -249,6 +250,6 @@ class FollowController extends ApiController{
             $fields,
             $this->form()->getData('page', 1),
             $this->form()->getData('page_size', 20));
-        Response::json($follows);
+        return new JsonResponse($follows);
     }
 }

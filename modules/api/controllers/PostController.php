@@ -3,7 +3,7 @@ namespace cms\modules\api\controllers;
 
 use cms\library\ApiController;
 use cms\services\post\PostService;
-use fay\core\HttpException;
+use fay\exceptions\NotFoundHttpException;
 use fay\core\Response;
 use fay\helpers\FieldsHelper;
 
@@ -66,9 +66,9 @@ class PostController extends ApiController{
         
         $post = PostService::service()->get($id, $fields, $cat);
         if($post){
-            Response::json($post);
+            return Response::json($post);
         }else{
-            throw new HttpException('您访问的页面不存在');
+            throw new NotFoundHttpException('您访问的页面不存在');
         }
     }
     

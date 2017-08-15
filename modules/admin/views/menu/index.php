@@ -6,13 +6,13 @@ function showCats($tree, $dep = 0){?>
     <?php foreach($tree as $k=>$node){?>
         <li class="leaf-container <?php if(!$k)echo 'first';?>">
             <div class="leaf">
-                <span class="fr options">
-                    <span class="w115 block fl">
-                    排序：<?php echo HtmlHelper::inputText('sort[]', $node['sort'], array(
+                <span class="fr separate-actions">
+                    <span class="w135 block fl">
+                    排序：<?php echo HtmlHelper::inputNumber('sort[]', $node['sort'], array(
                         'size'=>3,
                         'maxlength'=>3,
                         'data-id'=>$node['id'],
-                        'class'=>"form-control w50 edit-sort node-sort-{$node['id']}",
+                        'class'=>"form-control w70 edit-sort node-sort-{$node['id']}",
                     ))?>
                     </span>
                     <?php

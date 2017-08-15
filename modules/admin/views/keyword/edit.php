@@ -5,7 +5,7 @@
 ?>
 <div class="row">
     <div class="col-5">
-        <?php echo F::form()->open(array('cms/admin/keyword/edit', F::app()->input->get()))?>
+        <?php echo F::form()->open(array('cms/admin/keyword/edit', F::input()->get()))?>
             <div class="form-field">
                 <label>关键词<em class="required">*</em></label>
                 <?php echo F::form()->inputText('keyword', array(
@@ -26,7 +26,7 @@
         <?php echo F::form()->close()?>
     </div>
     <div class="col-7">
-        <?php $this->renderPartial('_right', array(
+        <?php echo $this->renderPartial('_right', array(
             'listview'=>$listview,
         ));?>
     </div>

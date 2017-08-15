@@ -3,13 +3,14 @@ namespace cms\modules\admin\controllers;
 
 use cms\library\AdminController;
 use cms\models\tables\ActionlogsTable;
+use cms\models\tables\CategoriesTable;
 use cms\models\tables\PagesCategoriesTable;
 use cms\models\tables\PagesTable;
 use cms\services\CategoryService;
 use cms\services\PageService;
 use cms\services\SettingService;
 use fay\common\ListView;
-use fay\core\HttpException;
+use fay\exceptions\NotFoundHttpException;
 use fay\core\Response;
 use fay\core\Sql;
 use fay\helpers\HtmlHelper;
@@ -83,7 +84,7 @@ class PageController extends AdminController{
             'enabled_boxes'=>$enabled_boxes,
         ));
         
-        $this->view->render();
+        return $this->view->render();
     }
     
     public function index(){
@@ -186,7 +187,7 @@ class PageController extends AdminController{
         //所有分类
         $this->view->cats = CategoryService::service()->getTree('_system_page');
         
-        $this->view->render();
+        return $this->view->render();
     }
     
     public function edit(){
@@ -239,10 +240,10 @@ class PageController extends AdminController{
             $this->view->page = $page;
             $this->form()->setData($page);
         }else{
-            throw new HttpException('无效的页面ID');
+            throw new NotFoundHttpException('无效的页面ID');
         }
 
-        $this->view->render();
+        return $this->view->render();
     }
     
     public function delete(){
@@ -301,8 +302,11 @@ class PageController extends AdminController{
     
         $this->layout->subtitle = '页面分类';
         $this->view->cats = CategoryService::service()->getTree('_system_page');
-        $root_node = CategoryService::service()->getByAlias('_system_page', 'id');
+        $root_node = CategoryService::service()->get('_system_page', 'id');
         $this->view->root = $root_node['id'];
+
+        \F::form('create')->setModel(CategoriesTable::model());
+        \F::form('edit')->setModel(CategoriesTable::model());
     
         if($this->checkPermission('cms/admin/page/cat-create')){
             $this->layout->sublink = array(
@@ -315,17 +319,17 @@ class PageController extends AdminController{
                 ),
             );
         }
-        $this->view->render();
+        return $this->view->render();
     }
     
     public function isAliasNotExist(){
-        if(PagesTable::model()->fetchRow(array(
+        if(PagesTable::model()->has(array(
             'alias = ?'=>$this->input->request('alias', 'trim'),
             'id != ?'=>$this->input->request('id', 'intval', false),
         ))){
-            Response::json('', 0, '别名已存在');
+            return Response::json('', 0, '别名已存在');
         }else{
-            Response::json();
+            return Response::json();
         }
     }
     
@@ -333,6 +337,6 @@ class PageController extends AdminController{
         $pages = PagesTable::model()->fetchAll(array(
             'title LIKE ?'=>'%'.$this->input->request('key', false).'%'
         ), 'id,title', 'id DESC', 20);
-        Response::json($pages);
+        return Response::json($pages);
     }
 }

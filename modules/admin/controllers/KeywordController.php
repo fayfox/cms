@@ -4,7 +4,7 @@ namespace cms\modules\admin\controllers;
 use cms\library\AdminController;
 use cms\models\tables\KeywordsTable;
 use fay\common\ListView;
-use fay\core\HttpException;
+use fay\exceptions\NotFoundHttpException;
 use fay\core\Response;
 use fay\core\Sql;
 
@@ -20,7 +20,7 @@ class KeywordController extends AdminController{
         $this->_setListview();
         
         $this->form()->setModel(KeywordsTable::model());
-        $this->view->render();
+        return $this->view->render();
     }
     
     public function create(){
@@ -51,7 +51,7 @@ class KeywordController extends AdminController{
         );
         $keyword_id = $this->input->get('id', 'intval');
         
-        $check = $this->form()->setModel(KeywordsTable::model());
+        $this->form()->setModel(KeywordsTable::model());
         
         if($this->input->post() && $this->form()->check()){
             $data = KeywordsTable::model()->fillData($this->input->post());
@@ -64,20 +64,20 @@ class KeywordController extends AdminController{
             
             $this->_setListview();
             
-            $this->view->render();
+            return $this->view->render();
         }else{
-            throw new HttpException('无效的ID', 500);
+            throw new NotFoundHttpException('无效的ID');
         }
     }
     
     public function isKeywordNotExist(){
-        if(KeywordsTable::model()->fetchRow(array(
+        if(KeywordsTable::model()->has(array(
             'keyword = ?'=>$this->input->request('keyword', 'trim'),
             'id != ?'=>$this->input->request('id', 'intval', false),
         ))){
-            Response::json('', 0, '关键词已存在');
+            return Response::json('', 0, '关键词已存在');
         }else{
-            Response::json();
+            return Response::json();
         }
     }
     

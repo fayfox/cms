@@ -6,9 +6,9 @@ function showCats($cats, $dep = 0){?>
     <?php foreach($cats as $k=>$c){?>
         <li class="leaf-container <?php if(!$k)echo 'first';?>">
             <div class="leaf">
-                <span class="fr options">
+                <span class="fr separate-actions">
                     <span class="w135 block fl">
-                    排序：<?php echo HtmlHelper::inputText('sort[]', $c['sort'], array(
+                    排序：<?php echo HtmlHelper::inputNumber('sort[]', $c['sort'], array(
                         'size'=>3,
                         'maxlength'=>3,
                         'data-id'=>$c['id'],

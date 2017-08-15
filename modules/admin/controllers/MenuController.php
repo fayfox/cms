@@ -32,7 +32,7 @@ class MenuController extends AdminController{
                 ),
             );
         }
-        $this->view->render();
+        return $this->view->render();
     }
     
     public function create(){
@@ -93,8 +93,8 @@ class MenuController extends AdminController{
                 $id = $this->input->post('id', 'intval');
                 $data = $this->form()->getFilteredData();
                 
-                $parent = $this->input->post('parent', 'intval', null);
-                $sort = $this->input->post('sort', 'intval', null);
+                $parent = $this->input->post('parent', 'intval');
+                $sort = $this->input->post('sort', 'intval');
                     
                 MenuService::service()->update($id, $data, $sort, $parent);
                 
@@ -136,7 +136,7 @@ class MenuController extends AdminController{
             'left_value > '.$menu['left_value'],
             'right_value < '.$menu['right_value'],
         ));
-        Response::json(array(
+        return Response::json(array(
             'menu'=>$menu,
             'children'=>$children,
         ));
@@ -175,6 +175,6 @@ class MenuController extends AdminController{
                 ),
             );
         }
-        $this->view->render();
+        return $this->view->render();
     }
 }

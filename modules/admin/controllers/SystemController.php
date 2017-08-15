@@ -9,35 +9,35 @@ use fay\core\Response;
 
 class SystemController extends AdminController{
     public function isMoboleExist(){
-        if(UsersTable::model()->fetchRow(array(
+        if(UsersTable::model()->has(array(
             'mobile = ?'=>$this->input->post('value', 'trim'),
             'id != ?'=>$this->input->request('id', 'intval')
         ))){
-            Response::json('', 0, '该手机号码已被注册');
+            return Response::json('', 0, '该手机号码已被注册');
         }else{
-            Response::json();
+            return Response::json();
         }
     }
     
     public function isEmailExist(){
-        if(UsersTable::model()->fetchRow(array(
+        if(UsersTable::model()->has(array(
             'email = ?'=>$this->input->post('value', 'trim'),
             'id != ?'=>$this->input->request('id', 'intval')
         ))){
-            Response::json('', 0, '该邮箱已被注册');
+            return Response::json('', 0, '该邮箱已被注册');
         }else{
-            Response::json();
+            return Response::json();
         }
     }
     
     public function isUsernameExist(){
-        if(UsersTable::model()->fetchRow(array(
+        if(UsersTable::model()->has(array(
             'username = ?'=>$this->input->post('value', 'trim'),
             'id != ?'=>$this->input->request('id', 'intval')
         ))){
-            Response::json('', 0, '该用户名已被注册');
+            return Response::json('', 0, '该用户名已被注册');
         }else{
-            Response::json();
+            return Response::json();
         }
     }
     

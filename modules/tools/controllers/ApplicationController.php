@@ -10,9 +10,10 @@ use cms\models\tables\UsersTable;
 use cms\services\CategoryService;
 use cms\services\FlashService;
 use cms\services\MenuService;
+use fay\core\Request;
 use fay\core\Response;
+use fay\helpers\IPHelper;
 use fay\helpers\LocalFileHelper;
-use fay\helpers\RequestHelper;
 use fay\helpers\StringHelper;
 
 class ApplicationController extends ToolsController{
@@ -32,7 +33,7 @@ class ApplicationController extends ToolsController{
     public function index(){
         $this->layout->subtitle = 'Application List';
         
-        $this->view->render();
+        return $this->view->render();
     }
     
     public function create(){
@@ -124,7 +125,7 @@ class ApplicationController extends ToolsController{
                 $this->db->insert('user_profile', array(
                     'user_id'=>$user_id,
                     'reg_time'=>$this->current_time,
-                    'reg_ip'=>RequestHelper::ip2int(RequestHelper::getIP()),
+                    'reg_ip'=>IPHelper::ip2int(Request::getUserIP()),
                     'trackid'=>'tools_create',
                 ));
                 
@@ -138,11 +139,11 @@ class ApplicationController extends ToolsController{
                     'option_value'=>$this->input->post('sitename'),
                 ));
                 
-                LocalFileHelper::createFile(BASEPATH.'..'.DS.'apps/'.$app_name.'/runtimes/installed.lock', date('Y-m-d H:i:s [') . RequestHelper::getIP() . "] \r\ninstallation-completed");
+                LocalFileHelper::createFile(BASEPATH.'..'.DS.'apps/'.$app_name.'/runtimes/installed.lock', date('Y-m-d H:i:s [') . Request::getUserIP() . "] \r\ninstallation-completed");
             }
         }
         
-        $this->view->render();
+        return $this->view->render();
     }
     
     public function isAppNotExist(){
@@ -151,10 +152,10 @@ class ApplicationController extends ToolsController{
         $apps = LocalFileHelper::getFileList(APPLICATION_PATH.'..');
         foreach($apps as $app){
             if($value == $app['name']){
-                Response::json('', 0, '项目名已存在');
+                return Response::json('', 0, '项目名已存在');
             }
         }
-        Response::json();
+        return Response::json();
     }
     
     private function createTables($prefix, $charset){

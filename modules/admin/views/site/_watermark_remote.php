@@ -6,7 +6,7 @@ use fay\helpers\HtmlHelper;
  * @var $this \fay\core\View
  */
 ?>
-<form id="watermark-remote-form" class="site-settings-form watermark-form" action="<?php echo $this->url('cms/admin/site/set-options')?>">
+<form id="watermark-remote-form" class="ajax-form watermark-form" action="<?php echo $this->url('cms/admin/option/set')?>">
     <div class="row">
         <div class="col-6">
             <div class="form-field">
@@ -56,7 +56,7 @@ use fay\helpers\HtmlHelper;
             <div class="watermark-form-image-panel <?php if($type == 'text') echo 'hide'?>">
                 <div class="form-field">
                     <label class="title bold">水印图片</label>
-                    <?php $this->renderPartial('file/_upload_image', array(
+                    <?php echo $this->renderPartial('file/_upload_image', array(
                         'field'=>'watermark:remote:image',
                         'label'=>'水印图片',
                         'remove_text'=>'',

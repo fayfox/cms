@@ -18,7 +18,6 @@ use fay\core\Loader;
 use fay\core\Service;
 use fay\helpers\FieldsHelper;
 use fay\helpers\NumberHelper;
-use fay\helpers\RequestHelper;
 
 /**
  * 用户服务
@@ -103,11 +102,11 @@ class UserService extends Service{
         ));
         
         if(!$user){
-            throw new UserException('指定用户不存在');
+            throw new PostNotExistException('指定用户不存在');
         }
         
         if($user['user']['block']){
-            throw new UserException('用户被锁定，无法登录', 'block:blocked');
+            throw new UserException('用户被锁定，无法登录');
         }
         
         //设置Session
@@ -118,7 +117,7 @@ class UserService extends Service{
         
         //更新用户最后登录信息
         UserProfileTable::model()->update(array(
-            'last_login_ip'=>RequestHelper::ip2int(\F::app()->ip),
+            'last_login_ip'=>\F::app()->ip_int,
             'last_login_time'=>\F::app()->current_time,
             'last_time_online'=>\F::app()->current_time,
             'login_times'=>new Expr('login_times + 1'),
@@ -128,7 +127,7 @@ class UserService extends Service{
         UserLoginsTable::model()->insert(array(
             'user_id'=>$user['user']['id'],
             'login_time'=>\F::app()->current_time,
-            'ip_int'=>RequestHelper::ip2int(\F::app()->ip),
+            'ip_int'=>\F::app()->ip_int,
             'mac'=>AnalystService::service()->getMacId(),
             'session'=>session_id(),
         ));
@@ -175,19 +174,20 @@ class UserService extends Service{
             'system:user_nickname_unique'
         ));
         if($config['system:user_nickname_required'] && !isset($user['nickname']) || $user['nickname'] == ''){
-            throw new UserException('用户昵称不能为空', 'missing-parameter:nickname');
+            throw new UserException('用户昵称不能为空');
         }
         
         if(!empty($user['username']) && UsersTable::model()->fetchRow(array(
             'username = ?'=>$user['username'],
         ))){
-            throw new UserException('用户名已存在', 'invalid-parameter:username-is-exist');
+            throw new UserException('用户名已存在');
         }
         
         if($config['system:user_nickname_unique'] && UsersTable::model()->fetchRow(array(
             'nickname = ?'=>$user['nickname'],
+                
         ))){
-            throw new UserException('用户昵称已存在', 'invalid-parameter:nickname-is-exist');
+            throw new UserException('用户昵称已存在');
         }
         
         //插用户表
@@ -197,7 +197,7 @@ class UserService extends Service{
         $user_profile = array(
             'user_id'=>$user_id,
             'reg_time'=>\F::app()->current_time,
-            'reg_ip'=>RequestHelper::ip2int(RequestHelper::getIP()),
+            'reg_ip'=>\F::app()->ip_int,
         );
         if(isset($extra['profile'])){
             $user_profile = $user_profile + $extra['profile'];
@@ -599,7 +599,7 @@ class UserService extends Service{
         if($user_id){
             $user = UsersTable::model()->find($user_id, 'admin');
             if(!$user){
-                throw new UserException('指定用户不存在');
+                throw new PostNotExistException('指定用户不存在');
             }
             return !empty($user['admin']);
         }else{
@@ -620,7 +620,7 @@ class UserService extends Service{
         }
         
         if(!$user){
-            throw new UserException('指定用户不存在');
+            throw new PostNotExistException('指定用户不存在');
         }
         
         if($user['block']){
@@ -670,7 +670,7 @@ class UserService extends Service{
      * @throws UserErrorException
      * @throws UserException
      */
-    public static function getUserId($user_id, $check_login = true){
+    public static function makeUserID($user_id, $check_login = true){
         if($user_id === null){
             $user_id = \F::app()->current_user;
         }else if($user_id && (!NumberHelper::isInt($user_id) || !self::isUserIdExist($user_id))){
@@ -678,7 +678,7 @@ class UserService extends Service{
         }
         
         if($check_login && !$user_id){
-            throw new UserException('请先登录', 'login-request');
+            throw new LoginRequestException('请先登录', 'login-request');
         }
         
         return $user_id;
